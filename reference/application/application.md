@@ -1,69 +1,66 @@
 # Application (`sails`)
 
-The Sails application object contains all relevant runtime state for a Sails application.
-By default it is exposed globally as `sails`, but this behavior [can be disabled](http://sailsjs.com/documentation/reference/configuration/sails-config-globals), e.g. for
-use cases where multiple Sails app instances need to exist at once, or where globals
-are not an option. The application object can also always be accessed on an incoming
-request (`req._sails`), and inside of [model](http://sailsjs.com/documentation/concepts/models-and-orm/models) and [service](http://sailsjs.com/documentation/concepts/services) modules via `this.sails`.
+Sailsのapplicationオブジェクトは、Sailsアプリケーションに必要な全てのruntime stateを含んでいます。
+デフォルトでは、'sails'としてグローバルに利用可能ですが、この機能を [オフにすることが可能](http://sailsjs.com/documentation/reference/configuration/sails-config-globals)です。例：複数のSails appインスタンスが必要な場合やglobal変数が許可されていない場合など。
+applicationオブジェクトはリクエストにおいては`req.sails`、[model](http://sailsjs.com/documentation/concepts/models-and-orm/models)内、そして[service](http://sailsjs.com/documentation/concepts/services)モジュールでは`this.sails`を用いていつでもアクセスすることが可能です.
 
-> Most users of the framework will only need to know about the `sails` application object in order to access a few basic methods and their custom configuration; less commonly-used methods can be found in the [advanced usage](http://sailsjs.com/documentation/reference/application/advanced-usage) section.
+> 通常は`sails` applicationオブジェクトについては、基本的ないくつかのメソッドと、カスタム設定について知っていれば十分です。より高度な機能については[advanced usage](http://sailsjs.com/documentation/reference/application/advanced-usage)セクションで知ることができます。
 
-### How does it work?
+### 仕組み
 
-An application instance is automatically created the first time you `require('sails')`.
-This is what is happening in the generated `app.js` file:
+applicationインスタンスは最初に`require('sails')`した瞬間に生成されます。
+これは自動生成された`app.js`ファイル内の
 
 ```javascript
 var sails = require('sails');
 ```
 
+において行われていることです。
 
+### プロパティ（Properties）
 
-
-### Properties
-
-The application object has a number of methods and properties which are useful.
-The officially supported methods on the `sails` object are covered by the other
-pages in this section.  Here are a few of its most useful properties:
+applicationオブジェクトはたくさんの有益なメソッドやプロパティを有しています。
+`sails`オブジェクトの全解説は他のページに記載されていますが、以下はいくつかの有益なプロパティの例です。
 
 ##### sails.models
 
-A dictionary of all loaded [Sails models](http://sailsjs.com/documentation/concepts/models-and-orm/models), indexed by their _identity_.
+_identity_ にてインデックスされた、全てのロード済み[Sailsモデル](http://sailsjs.com/documentation/concepts/models-and-orm/models)を持つ連想配列です。
 
-By default, a model's identity is the lowercased version of its filename, without the **.js** extension.  For example, the default identity for a model loaded from `api/models/PowerPuff.js` would be `powerpuff`, and the model would be accessible via `sails.models.powerpuff`.  A model's identity can be customized by setting an `identity` property in its module file.
+デフォルトでは、モデルのファイル名から**.js**を除いた小文字をモデルの名称（_identity_）としています。例えば、`api/models/PowerPuff.js`からロードされたモデルの名称（_identity_）は`powerpuff`となり、`sails.models.powerpuff`でアクセスが可能になります。モデルの名称（_identity_）はそのモデルのmodule fileから`identity`プロパティを設定することで変更できます。
 
 ##### sails.config
 
-The full set of configuration options for the Sails instance, loaded from a combination of environment variables, `.sailsrc` files, user-configuration files and defaults.  See the [configuration concepts section](http://sailsjs.com/documentation/concepts/configuration) for a full overview of configuring Sails, and the [configuration reference](http://sailsjs.com/documentation/reference/configuration) for details on individual options.
+環境変数、`.sailsrc`、user-configurationファイルとdefaultsからロードされたsailsインスタンスに適用される全ての設定オプションです。
+[configuration concepts section](http://sailsjs.com/documentation/concepts/configuration)にSailsにおける設定方法の概要が、[configuration reference](http://sailsjs.com/documentation/reference/configuration)に各設定オプションの詳細を解説しています。
 
 ##### sails.sockets
 
-A set of convenience methods for low-level interaction with connected websockets.  See the [`sails.sockets.*` reference section](http://sailsjs.com/documentation/reference/web-sockets/sails-sockets) for details.
+websocketを取り扱う上での便利なメソッドを提供しています。
+詳細は、[`sails.sockets.*` reference section](http://sailsjs.com/documentation/reference/web-sockets/sails-sockets)に記載しています。
 
 ##### sails.hooks
 
-A dictionary of all loaded [Sails hooks](http://sailsjs.com/documentation/concepts/extending-sails/hooks), indexed by their _identity_.  Use `sails.hooks` to access properties and methods of hooks you've installed to extend Sails; for example, by calling `sails.hooks.email.send()`.  You can also use this dictionary to access the Sails [core hooks](http://sailsjs.com/documentation/concepts/extending-sails/hooks#?types-of-hooks), for advanced usage.
+_identity_ にてインデックスされた、全てのロード済み[Sails hooks](http://sailsjs.com/documentation/concepts/extending-sails/hooks)を持つ連想配列です。
+`sails.hooks`を用いることで、Sailsに追加インストールした様々なプロパティやメソッドを利用できます。例えば、`sails.hooks.email.send()`など。この連想配列を利用することで、Sailsの[core hooks](http://sailsjs.com/documentation/concepts/extending-sails/hooks#?types-of-hooks)も利用できます。
 
-By default, a hook's identity is the lowercased version of its folder name, with any `sails-hook-` prefix removed.  For example, the default identity for a hook loaded from `node_modules/sails-hook-email` would be `email`, and the hook would be accessible via `sails.hooks.email`.  An installed hook's identity can be changed via the [`installedHooks` config property](http://sailsjs.com/documentation/concepts/extending-sails/hooks/using-hooks#?changing-the-way-sails-loads-an-installable-hook).
+デフォルトでは、hookの名称（_identity_）は`sails-hook-`prefixを除いたフォルダ名の小文字表記になります。例えば、`node_modules/sails-hook-email`からロードされたhookのアイデンティティは`email`となり、`sails.hooks.email`からアクセス可能になります。インストール済みのhookの名称（_identity_）は[`installedHooks` config property](http://sailsjs.com/documentation/concepts/extending-sails/hooks/using-hooks#?changing-the-way-sails-loads-an-installable-hook)から変更できます。
 
-See the [hooks concept documentation](http://sailsjs.com/documentation/concepts/extending-sails/hooks) for more info about hooks.
+[hooks concept documentation](http://sailsjs.com/documentation/concepts/extending-sails/hooks)にhookについて詳細を解説しています。
 
 ##### `sails.io`
 
-The API exposed by the [`sails.sockets.*` methods](http://sailsjs.com/documentation/reference/web-sockets/sails-sockets) is flexible enough out of the box to cover the requirements of most applications, and using them will future-proof your app against possible changes in the underlying implementation.  However, if you are working on bringing some legacy code from a vanilla Socket.io app into your Sails app, it can be useful to talk to Socket.io directly.  To accomplish this, Sails provides raw access to the underlying [socket.io](http://socket.io/) server instance (`io`) as `sails.io`. See the [Socket.io docs](http://socket.io/docs/) for more information.  If you decide to use Socket.io directly, please proceed with care.
+[`sails.sockets.*` methods](http://sailsjs.com/documentation/reference/web-sockets/sails-sockets)の提供するAPIはほとんどのアプリケーションの開発に耐え得る内容であり、webscocketの内部的な仕様の変化を覆い隠す力がありますが、レガシーなSocket.ioベースのアプリケーションをSailsアプリに移植する際には、Socket.ioを直接利用するのが有用かもしれません。Sailsはこのような用途に合わせて[socket.io](http://socket.io/)のサーバーインスタンス (`io`) へのアクセスを `sails.io`として提供しています。[Socket.io docs](http://socket.io/docs/)に詳細があります。Socket.ioを直接利用する場合にはよく注意してください。
 
-> As of v0.11.4, Sails bundles `socket.io@v1.4.3` as a dependency of [sails-hook-sockets](github.com/balderdashy/sails-hook-sockets), a core hook.
-
-
+> v0.11.4のSailsではコアhook、[sails-hook-sockets](github.com/balderdashy/sails-hook-sockets)として`socket.io@v1.4.3`をbundleしています。
 
 
 
-### Creating a new application object (advanced)
 
-If you are implementing something unconventional (e.g. writing tests for Sails core)
-where you need to create more than one Sails application instance in a process, you _should not_ use
-the instance returned by `require('sails')`, as this can cause unexpected behavior.  Instead, you should
-obtain application instances by using the Sails constructor:
+
+### 新しいapplicationオブジェクトを生成する (上級者向け)
+
+複数のSails applicationインスタンスが必要になるような特殊な実装（例えば、Sails core向けのテストを書くなど）が必要な場合には、`require('sails')`で返されたインスタンスは_利用しない_でください。想定外の挙動をする場合があります。
+代わりにSailsコンストラクタを利用して、applicationインスタンスを取得する必要があります。
 
 ```javascript
 var Sails = require('sails').constructor;
@@ -72,10 +69,9 @@ var sails1 = new Sails();
 var sails2 = new Sails();
 ```
 
-Each app instance (`sails0`, `sails1`, `sails2`) can be loaded/lifted separately,
-using different configuration.
+それぞれのappインスタンス (`sails0`, `sails1`, `sails2`) は異なる設定の下、個別にロードまたはliftが可能です。
 
-For more on using Sails programatically, see the conceptual overview on [programmatic usage in Sails](http://sailsjs.com/documentation/concepts/programmatic-usage).
+Sails自体をプログラマブルに利用したい場合には[programmatic usage in Sails](http://sailsjs.com/documentation/concepts/programmatic-usage)を参照してください。
 
 
 <docmeta name="displayName" value="Application">
