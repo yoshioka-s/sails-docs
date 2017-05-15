@@ -1,4 +1,4 @@
-# Using Sails programmatically
+# Sailsをプログラム的に利用する
 
 ### Overview
 
