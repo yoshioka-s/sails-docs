@@ -5,7 +5,7 @@ Respond with an HTML page.
 
 ### Usage
 
-```js
+```usage
 return res.view(pathToView, locals);
 ```
 
@@ -24,8 +24,8 @@ The specified [`locals`](http://sailsjs.com/documentation/reference/Views/Locals
 
 |   | Argument       | Type        | Details |
 |---|----------------|:-----------:|---------|
-| 1 | `pathToView`   | ((string))  | The path to the desired view file relative to your app's [`views` folder](http://sailsjs.com/documentation/anatomy/myApp/views) (usually `views/`), without the file extension (e.g. `.ejs`), and with no trailing slash.<br/>Defaults to "identityOfController/nameOfAction".
-| 2 | `locals`       | ((dictionary))  | Data to pass to the view template.  These explicitly specified locals will be merged in to Sails' [built-in locals](http://sailsjs.com/documentation/concepts/Views/Locals.html) and your [configured app-wide locals](https://github.com/balderdashy/sails-docs/blob/master/PAGE_NEEDED.md).<br/>Defaults to `{}`.
+| 1 |  pathToView    | ((string))  | The path to the desired view file relative to your app's [`views` folder](http://sailsjs.com/documentation/anatomy/myApp/views) (usually `views/`), without the file extension (e.g. `.ejs`), and with no trailing slash.<br/>Defaults to "identityOfController/nameOfAction".
+| 2 |  locals        | ((dictionary))  | Data to pass to the view template.  These explicitly specified locals will be merged in to Sails' [built-in locals](http://sailsjs.com/documentation/concepts/Views/Locals.html) and your [configured app-wide locals](https://github.com/balderdashy/sails-docs/blob/master/PAGE_NEEDED.md).<br/>Defaults to `{}`.
 
 
 

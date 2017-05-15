@@ -10,21 +10,33 @@ Something.unsubscribe(req, ids);
 
 |   | Argument   | Type         | Details |
 |---|:-----------|:------------:|:--------|
-| 1 | `req`      | ((req))      | The incoming socket request (`req`) containing the socket to unsubscribe.
-| 2 | `ids`      | ((array))    | An array of record ids (primary key values).
+| 1 | req        | ((req))      | The incoming socket request (`req`) containing the socket to unsubscribe.
+| 2 | ids        | ((array))    | An array of record ids (primary key values).
 
 
 
 ### Example
 
+On the server:
+
 ```javascript
-User.find({name: 'Lenny'}).exec(function(err, lennies) {
-  if (err) return res.serverError(err);
-  if (req.isSocket) {
-    User.unsubscribe( req, _.pluck(lennies, 'id') );
+unsubscribeFromUsersNamedLenny: function (req, res) {
+
+  if (!req.isSocket) {
+    return res.badRequest();
   }
-  return res.ok();
-});
+
+  User.find({name: 'Lenny'}).exec(function(err, lennies) {
+    if (err) { return res.serverError(err); }
+
+    var lennyIds = _.pluck(lennies, 'id');
+
+    User.unsubscribe(req, lennyIds);
+
+    return res.ok();
+
+  });
+},
 ```
 
 

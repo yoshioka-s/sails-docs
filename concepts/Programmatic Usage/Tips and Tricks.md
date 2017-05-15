@@ -1,4 +1,4 @@
-# Tips and Tricks for Programmatic Usage
+# Tips and tricks for programmatic usage
 
 When loading a Sails app programmatically, you will usually want to turn off certain hooks that are not being actively used, both for reasons of optimization and to ensure minimal interference between the Sails app and the Node script enclosing it.  To turn off a hook, set it to `false` in a `hooks` dictionary that you send as part of the first argument to `.load()` or `.lift()`.
 
@@ -19,4 +19,4 @@ mySailsApp.load({
 
 Finally, note that while you can use the Sails constructor to create and start as many Sails apps programmtically as you like, each app can only be started once.  Once you call `.lower()` on an app, it cannot be started again.
 
-<docmeta name="displayName" value="Tips and Tricks">
+<docmeta name="displayName" value="Tips and tricks">

@@ -2,7 +2,7 @@
 
 ### Overview
 
-Assets refer to [static files](http://en.wikipedia.org/wiki/Static_web_page) (js, css, images, etc) on your server that you want to make accessible to the outside world.  In Sails, these files are placed in the [`assets/`](http://sailsjs.com/documentation/anatomy/assets) folder.  When you lift your app, add files to your `assets/` folder, or change existing assets, Sails' built-in asset pipeline processes and syncs those files to a hidden folder (`.tmp/public/`).
+Assets refer to [static files](http://en.wikipedia.org/wiki/Static_web_page) (js, css, images, etc) on your server that you want to make accessible to the outside world.  In Sails, these files are placed in the [`assets/`](http://sailsjs.com/documentation/anatomy/myApp/assets) folder.  When you lift your app, add files to your `assets/` folder, or change existing assets, Sails' built-in asset pipeline processes and syncs those files to a hidden folder (`.tmp/public/`).
 
 > This intermediate step (moving files from `assets/` into `.tmp/public/`) allows Sails to pre-process assets for use on the client - things like LESS, CoffeeScript, SASS, spritesheets, Jade templates, etc.
 
@@ -11,7 +11,7 @@ The contents of this `.tmp/public` folder are what Sails actually serves at runt
 
 ### Static middleware
 
-Behind the scenes, Sails uses the [static middleware](http://www.senchalabs.org/connect/static.html) from Express to serve your assets. You can configure this middleware (e.g. cache settings) in [`/config/http.js`](http://sailsjs.com/documentation/reference/sails.config/sails.config.http.html).
+Behind the scenes, Sails uses the [serve-static middleware](https://www.npmjs.com/package/serve-static) from Express to serve your assets. You can configure this middleware (e.g. to change cache settings) in [`/config/http.js`](http://sailsjs.com/documentation/reference/sails.config/sails.config.http.html).
 
 ##### `index.html`
 Like most web servers, Sails honors the `index.html` convention.  For instance, if you create `assets/foo.html` in a new Sails project, it will be accessible at `http://localhost:1337/foo.html`.  But if you create `assets/foo/index.html`, it will be available at both `http://localhost:1337/foo/index.html` and `http://localhost:1337/foo`.

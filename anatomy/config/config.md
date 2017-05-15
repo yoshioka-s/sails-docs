@@ -1,5 +1,5 @@
-# config
-### Purpose
+# config/
+
 This folder contains various files that will allow you to customize and configure your Sails app.
 
 

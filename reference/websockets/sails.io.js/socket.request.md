@@ -21,17 +21,17 @@ io.socket.request(options, function (resData, jwres)){
 
 
 | Option   | Type         | Details |
-|------------|:------------:|:--------|
-| `method`      | ((string))   | The HTTP request method; e.g. `'GET'`.
-| `url`         | ((string))   | The destination URL path; e.g. "/checkout".
-| _`data`_    | ((json?))        | Optional. If provided, this request data will be JSON-encoded and included as the virtual HTTP body.
-| _`headers`_ | ((dictionary?))        | Optional. If provided, this dictionary of string headers will be sent as virtual request headers.
+|:-----------|:------------:|:--------|
+| method    | ((string))   | The HTTP request method; e.g. `'GET'`.
+| url       | ((string))   | The destination URL path; e.g. "/checkout".
+| _data_    | ((json?))        | Optional. If provided, this request data will be JSON-encoded and included as the virtual HTTP body.
+| _headers_ | ((dictionary?))        | Optional. If provided, this dictionary of string headers will be sent as virtual request headers.
 
 
 ##### Callback
 
 |   | Argument  | Type         | Details |
-|---|-----------|:------------:|---------|
+|---|:----------|:------------:|:--------|
 | 1 | `resData` | ((json))     | Data received in the response from the Sails server (=== `jwres.body`, and also equivalent to the HTTP response body.)
 | 2 | `jwres`   | ((dictionary))      | A [JSON WebSocket Response](https://github.com/balderdashy/sails-docs/blob/master/PAGE_NEEDED.md) object.  Has `headers`, a `body`, and a `statusCode`.
 
@@ -56,7 +56,9 @@ io.socket.request({
     console.log(jwres.statusCode); // => e.g. 403
     return;
   }
+
   console.log(jwres.statusCode); // => e.g. 200
+
 });
 ```
 

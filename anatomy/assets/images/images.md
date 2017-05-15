@@ -1,5 +1,4 @@
-# assets/images
-### Purpose
+# assets/images/
 
 This is where you should put image files that need to be statically hosted by your app.
 

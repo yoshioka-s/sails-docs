@@ -2,52 +2,92 @@
 
 Create a new record in your database.
 
-```
+```usage
 POST /:model
 ```
 
 Responds with a JSON dictionary representing the newly created instance.  If a validation error occurred, a JSON response with the invalid attributes and a `400` status code will be returned instead.
 
-Additionally, a `create` event will be published to all sockets which are _watching_ this model, and those sockets will also be subscribed to hear about subsequent changes to the new record (see the docs for [`.watch()`](https://github.com/balderdashy/sails-docs/blob/master/reference/websockets/resourceful-pubsub/watch.md) for more info).
+Additionally, if the [`autoWatch` setting](http://sailsjs.com/documentation/reference/configuration/sails-config-blueprints?properties) is on (which it is by default), then a "created" notification will be published to all client sockets which are _watching_ this model; that is, client sockets who have previously sent a request to the "Find" blueprint action.  Those same sockets will also be subscribed to hear about subsequent changes to the new record.
 
-If the action is triggered via a socket request, the requesting socket will ALSO be subscribed to the newly created model instance. If the record is subsequently updated or deleted, a message will be sent to that socket's client informing them of the change. See the docs for [`.subscribe()`](http://sailsjs.com/documentation/reference/web-sockets/resourceful-pub-sub/subscribe) for more info.
+Finally, if this blueprint action is triggered via a socket request, then the requesting socket will ALSO be subscribed to the newly created record.  In other words, if the record is subsequently updated or deleted using blueprints, a message will be sent to that client socket informing them of the change.  See [`.subscribe()`](http://sailsjs.com/documentation/reference/web-sockets/resourceful-pub-sub/subscribe) for more info.
 
 ### Parameters
 
-Parameters should be sent in the [request body](https://www.getpostman.com/docs/requests#body).  By default, Sails understands most common types of encodings for body parameters, including url-encoding, form-encoding, and JSON.
+Parameters should be sent in the [request body](https://www.getpostman.com/docs/requests#body).  By default, Sails understands the most common types of encodings for body parameters, including url-encoding, form-encoding, and JSON.
 
  Parameter      | Type                                                      | Details
  -------------- | --------------------------------------------------------- |:---------------------------------
  model          | ((string))   | The [identity](http://sailsjs.com/documentation/concepts/models-and-orm/model-settings#?identity) of the model in which the new record should be created.<br/><br/>e.g. `'purchase'` (in `POST /purchase`)
  _*_            | ((json?))                                                  | Send [body parameters](https://www.getpostman.com/docs/requests#body) with the same names as the attribute defined on your model to set those values on your new record.  <br/> <br/>These values are handled the same way as if they were passed into the model's <a href="http://sailsjs.com/documentation/reference/waterline-orm/models/create">.create()</a> method.
- _callback_     | ((string?))                                                | If specified, a JSONP response will be sent (instead of JSON).  This is the name of the client-side javascript function to call, passing results as the first (and only) argument<br/> <br/> e.g. `?callback=myJSONPHandlerFn`
 
 ### Example
 
-Create a new pony named "AppleJack" with a hobby of "pickin":
+Create a new user named "Applejack" with a hobby of "pickin", who is involved in purchases #13 and #25:
 
 `POST /pony`
 
 ```json
 {
-  "name": "AppleJack",
-  "hobby": "pickin"
+  "name": "Applejack",
+  "hobby": "pickin",
+  "involvedInPurchases": [13,25]
 }
 ```
 
 [![Run in Postman](https://s3.amazonaws.com/postman-static/run-button.png)](https://www.getpostman.com/run-collection/96217d0d747e536e49a4)
 
-##### Example Response
+##### Example response
 ```json
 {
-  "name": "AppleJack",
-  "hobby": "pickin",
   "id": 47,
-  "createdAt": "2013-10-18T01:23:56.000Z",
-  "updatedAt": "2013-11-26T22:55:19.951Z"
+  "name": "Applejack",
+  "hobby": "pickin",
+  "createdAt": 1485550575626,
+  "updatedAt": 1485550603847,
+  "involvedInPurchases": [
+    {
+      "id": 13,
+      "amount": 10000,
+      "createdAt": 1485550525451,
+      "updatedAt": 1485550544901
+    },
+    {
+      "id": 25,
+      "amount": 4.50,
+      "createdAt": 1485550561340,
+      "updatedAt": 1485550561340
+    }
+  ]
 }
 ```
 
+### Socket notifications
+
+If you have WebSockets enabled for your app, then every socket client who is "watching" this model (has sent a request to the model's ["find where" blueprint action](http://sailsjs.com/documentation/reference/blueprint-api/find-where)) will receive a "created" notification where the event name is the model identity (e.g. `user`), and the message has the following format:
+
+```
+verb: 'created',
+data: <a dictionary of the attribute values of the new record (without associations)>
+id: <the new record primary key>,
+```
+
+For instance, continuing the example above, all clients who are watching the `User` model (_except_ for the client making the request) would receive the following message:
+```js
+id: 47,
+verb: 'created',
+data: {
+  id: 47,
+  name: 'Applejack',
+  hobby: 'pickin',
+  createdAt: 1485550575626,
+  updatedAt: 1485550603847
+}
+```
+
+**Clients subscribed to newly-associated child records will receive a notification, too:**
+
+Since the new record in our example included an initial value for `involvedInPurchases`, an association pointed at by `via` on the other side, then `addedTo` notifications would also be sent to any clients who are [subscribed](http://sailsjs.com/documentation/reference/web-sockets/resourceful-pub-sub) to those now-associated child records on the other side of the relationship-- in this case, purchases 13 and 25.  See [**Blueprints > add to**](http://sailsjs.com/documentation/reference/blueprint-api/add-to) for more info about the structure of those notifications.
 
 <docmeta name="displayName" value="create">
 <docmeta name="pageType" value="endpoint">

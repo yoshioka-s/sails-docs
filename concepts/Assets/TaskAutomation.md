@@ -1,4 +1,4 @@
-# Task Automation
+# Task automation
 
 ### Overview
 
@@ -144,11 +144,11 @@ npm uninstall grunt-contrib-jst --save-dev
 
 ### Task triggers
 
-In [development mode](http://sailsjs.com/documentation/reference/sails.config/sails.config.local.html?q=environment), Sails runs the `default` task ([`tasks/register/default.js`](http://sailsjs.com/documentation/anatomy/tasks/register/default.js.html)).  This compiles LESS, CoffeeScript, and client-side JST templates, then links to them automatically from your app's dynamic views and static HTML pages.
+In [development mode](http://sailsjs.com/documentation/reference/sails.config/sails.config.local.html?q=environment), Sails runs the `default` task ([`tasks/register/default.js`](http://sailsjs.com/documentation/anatomy/myApp/tasks/register/default.js.html)).  This compiles LESS, CoffeeScript, and client-side JST templates, then links to them automatically from your app's dynamic views and static HTML pages.
 
-In production, Sails runs the `prod` task ([`tasks/register/prod.js`](http://sailsjs.com/documentation/anatomy/tasks/register/prod.js.html)) which shares the same duties as `default`, but also minifies your app's scripts and stylesheets.  This reduces your application's load time and bandwidth usage.
+In production, Sails runs the `prod` task ([`tasks/register/prod.js`](http://sailsjs.com/documentation/anatomy/myApp/tasks/register/prod.js.html)) which shares the same duties as `default`, but also minifies your app's scripts and stylesheets.  This reduces your application's load time and bandwidth usage.
 
-These task triggers are ["basic" Grunt tasks](http://gruntjs.com/creating-tasks#basic-tasks) located in the [`tasks/register/`](http://sailsjs.com/documentation/anatomy/tasks/register) folder.  Below, you'll find the complete reference of all task triggers in Sails, and the command which kicks them off:
+These task triggers are ["basic" Grunt tasks](http://gruntjs.com/creating-tasks#basic-tasks) located in the [`tasks/register/`](http://sailsjs.com/documentation/anatomy/myApp/tasks/register) folder.  Below, you'll find the complete reference of all task triggers in Sails, and the command which kicks them off:
 
 ##### `sails lift`
 
@@ -169,4 +169,4 @@ Runs the **buildProd** task (`tasks/register/buildProd.js`) that does the same a
 You may run other tasks by specifying setting NODE_ENV and creating a task list in tasks/register/ with the same name.  For example, if NODE_ENV is QA, sails will run tasks/register/QA.js if it exists.
 
 
-<docmeta name="displayName" value="Task Automation">
+<docmeta name="displayName" value="Task automation">

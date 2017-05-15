@@ -1,6 +1,21 @@
-# Custom Adapters
+# Custom adapters
 
 Sails makes it fairly easy to write your own database adapter.  Custom adapters can be built directly in your app (`api/adapters/`) or published as NPM packages.  Check out [Intro to Custom Adapters](https://github.com/balderdashy/sails-docs/blob/master/contributing/intro-to-custom-adapters.md), the [Adapter Interface Reference](https://github.com/balderdashy/sails-docs/blob/master/contributing/adapter-specification.md), and [sails-adapter-boilerplate](https://github.com/balderdashy/sails-adapter-boilerplate) for more information about creating your own adapter.
+
+
+### Where does my adapter go?
+
+There are two different places you can build an adapter:
+
+##### In your app's `api/adapters/` folder
+
+If an adapter is only going to be used in one app (e.g. a short-term fork of an existing adapter) you can put it in `api/adapters/`.  This is what you get out of the box when you run `sails generate adapter`.  In this case, the name of the adapter is determined by the name of the folder inside `api/adapters/`.  (By convention, the entry point for your adapter should be `index.js`.)
+
+##### In a separate repo
+
+Go with this option if you plan to share your adapter between multiple Sails apps, whether that's within your organization or as an open-source package for other members of the Sails/Node.js community at large.  To use an externalized adapter like this, you'll need to do `npm install your-adapter-package-name` or `npm link your-adapter-package-name`.
+
+> Before you start on an open-source adapter, we recommend you search GitHub for `sails-databasename` and `waterline-databasename` to check if a project already exists. If it does, it's generally a good idea to approach the author of an existing adapter and offer to contribute instead of starting a new project. Most developers will welcome your help, and the combined efforts will likely result in a better quality adapter. If one doesn't exist, we recommend you create a new project and name it following the convention: `sails-databasename`.
 
 
 ### What goes in a custom adapter?
@@ -25,14 +40,14 @@ Check out the [Sails docs](http://sailsjs.com/documentation), or see [`config/da
 
 #### Running the tests
 
-Configure the interfaces you plan to support (and targeted version of Sails/Waterline) in the adapter's `package.json` file:
+Configure the interfaces you plan to support (and the targeted version of Sails) in the adapter's `package.json` file:
 
 ```javascript
 {
   //...
   "sails": {
   	"adapter": {
-	    "sailsVersion": "~0.10.0",
+	    "sailsVersion": "^1.0.0",
 	    "implements": [
 	      "semantic",
 	      "queryable"
@@ -97,7 +112,7 @@ The functionality of database adapters is as varied as the services they connect
 
 ### Are there examples I can look at?
 
-If you're looking for some inspiration, a good place to start is with the core adapters.  Take a look at **[MySQL](https://github.com/balderdashy/sails-mysql)**, **[PostgreSQL](https://github.com/balderdashy/sails-postgresql)**, **[MongoDB](https://github.com/balderdashy/sails-mongo)**, **[Redis](https://github.com/balderdashy/sails-redis)**, local [disk](https://github.com/balderdashy/sails-disk), or local [memory](https://github.com/balderdashy/sails-memory).
+If you're looking for some inspiration, a good place to start is with the core adapters.  Take a look at **[MySQL](https://github.com/balderdashy/sails-mysql)**, **[PostgreSQL](https://github.com/balderdashy/sails-postgresql)**, **[MongoDB](https://github.com/balderdashy/sails-mongo)**, **[Redis](https://github.com/balderdashy/sails-redis)**, or local [disk](https://github.com/balderdashy/sails-disk).
 
 
 ### Where do I get help?
@@ -109,4 +124,4 @@ An active community of Sails and Waterline users exists on GitHub, Stack Overflo
 
 
 
-<docmeta name="displayName" value="Custom Adapters">
+<docmeta name="displayName" value="Custom adapters">

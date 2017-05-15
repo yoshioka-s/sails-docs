@@ -1,70 +1,94 @@
 # Middleware
 
-Sails is fully compatible with Express / Connect middleware - in fact, it's all over the place!  Much of the code you'll write in Sails is effectively middleware; most notably [controller actions](http://sailsjs.com/documentation/concepts/Controllers?q=actions) and [policies](http://sailsjs.com/documentation/concepts/Policies).
+Technically, much of the code you&rsquo;ll write in a Sails app is _middleware_, in that runs in between the incoming request and the outgoing response -- that is, in the "middle" of the request/response stack.  In an MVC framework, the term &ldquo;middleware&rdquo; typically refers more specifically to code that runs _before_ or _after_ your route-handling code (i.e. your [controller actions](http://sailsjs.com/documentation/concepts/Controllers?q=actions)), making it possible to apply the same piece of code to multiple routes or actions.  Sails has robust support for the middleware design pattern.  Depending on your needs, you may choose to implement:
 
+* HTTP middleware (to apply code before _every_ HTTP request -- see below for more details)
+* [Policies](http://sailsjs.com/documentation/concepts/policies) (to apply code before one or more controller actions)
+* [Hooks with the `routes` feature implemented](http://sailsjs.com/documentation/concepts/extending-sails/hooks/hook-specification/routes) (to apply code before one or more route handlers)
+* [Custom responses](http://sailsjs.com/documentation/concepts/custom-responses) (to apply code after one or more controller actions)
 
-### HTTP Middleware
+### HTTP middleware
 
-Sails also utilizes an additional [configurable middleware stack](http://sailsjs.com/documentation/concepts/Middleware#adding-or-overriding-http-middleware) just for handling HTTP requests.  Each time your app receives an HTTP request, the configured HTTP middleware stack runs in order.
-
-Read about the default middleware stack [here](http://sailsjs.com/documentation/concepts/middleware/conventional-defaults).
+Sails is fully compatible with Express / Connect middleware, which are functions that accept `req`, `res` and `next` as arguments.  Every app utilizes a configurable _middleware stack_, just for handling HTTP requests.  Each time the app receives an HTTP request, its configured HTTP middleware stack runs in order.
 
 > Note that this HTTP middleware stack is only used for "true" HTTP requests-- it is ignored for **virtual requests** (e.g. requests from a live Socket.io connection.)
 
+##### Built-in HTTP middleware
+
+By default, Sails uses a few different middleware functions to handle low-level HTTP-related tasks.  These are things like interpreting cookies, parsing HTTP request bodies, serving assets, and even attaching your app's routes.  You can read more about the default middleware stack [here](http://sailsjs.com/documentation/concepts/middleware/conventional-defaults).
 
 
-#### Adding or Overriding HTTP Middleware
+### Configuring the HTTP middleware stack
 
-To configure a custom HTTP middleware function, define a new HTTP key `sails.config.http.middleware.foobar` and set it to the configured middleware function, then add the string name ("foobar") to your `sails.config.http.middleware.order` array wherever you'd like it to run in the middleware chain (a good place to put it might be right before "cookieParser"):
+Since the middleware stack comes with reasonable defaults, many Sails apps won't need to modify this configuration at all.  But for situations where you need more flexibility, Sails makes it simple to add, reorder, override, and disable the functions in your app's HTTP middleware stack.
 
-E.g. in `config/http.js`:
+##### Adding middleware
+To configure a new custom HTTP middleware function, add a middleware function as a new key in `middleware` (e.g. "foobar"), then add the name of its key ("foobar") in the `middleware.order` array, wherever you'd like it to run in the middleware chain.
+
+With the exception of "order" (which is reserved for configuring the order of the middleware stack), any value assigned to a key of `sails.config.middleware` should be a function which takes three arguments: `req`, `res` and `next`.  This function works almost exactly like a [policy](http://sailsjs.com/documentation/concepts/policies); the only tangible difference being when it is executed.
+
+##### Initializing middleware
+If you need to run some one-time set up code for a custom middleware function, you'll need to do so _before_ passing it in.  The recommended way of doing this is with a self-calling (aka ["immediately-invoked"](https://en.wikipedia.org/wiki/Immediately-invoked_function_expression)) wrapper function.  In the example below, note that rather than setting the value to a "req, res, next" function directly, a self-calling function is used to "wrap" up some initial setup code.  That self-calling wrapper function then returns the final middleware (req,res,next) function, so it gets set on the key just the same was as if it had been passed in directly.
+
+##### Example: Using custom middleware
+The following example shows how you might set up three different custom HTTP middleware functions:
 
 ```js
-  // ...
+// config/http.js
+module.exports.http = {
+
   middleware: {
 
-    // Define a custom HTTP middleware fn with the key `foobar`:
-    foobar: function (req,res,next) { /*...*/ next(); },
-
-    // Define another couple of custom HTTP middleware fns with keys `passportInit` and `passportSession`
-    // (notice that this time we're using an existing middleware library from npm)
-    passportInit    : require('passport').initialize(),
-    passportSession : require('passport').session(),
-
-    // Override the conventional cookie parser:
-    cookieParser: function (req, res, next) { /*...*/ next(); },
-
-
-    // Now configure the order/arrangement of our HTTP middleware
     order: [
-      'startRequestTimer',
       'cookieParser',
       'session',
-      'passportInit',            // <==== passport HTTP middleware should run after "session"
-      'passportSession',         // <==== (see https://github.com/jaredhanson/passport#middleware)
+      'passportInit',            // <==== If you're using "passport", you'll want to have its two
+      'passportSession',         // <==== middleware functions run after "session".
       'bodyParser',
       'compress',
-      'foobar',                  // <==== we can put this stuff wherever we want
-      'methodOverride',
+      'foobar',                  // <==== We can put other, custom HTTP middleware like this wherever we want.
       'poweredBy',
-      '$custom',
       'router',
       'www',
       'favicon',
-      '404',
-      '500'
-    ]
-  },
+    ],
 
-  customMiddleware: function(app){
-     //Intended for other middleware that doesn't follow 'app.use(middleware)' convention
-     require('other-middleware').initialize(app);
-  }
-  // ...
+
+    // An example of a custom HTTP middleware function:
+    foobar: (function (){
+      console.log('Initializing `foobar` (HTTP middleware)...');
+      return function (req,res,next) {
+        console.log('Received HTTP request: '+req.method+' '+req.path);
+        return next();
+      };
+    })(),
+
+    // An example of a couple of 3rd-party HTTP middleware functions:
+    // (notice that this time we're using an existing middleware library from npm)
+    passportInit    : (function (){
+      var passport = require('passport');
+      var reqResNextFn = passport.initialize();
+      return reqResNextFn;
+    })(),
+
+    passportSession : (function (){
+      var passport = require('passport');
+      var reqResNextFn = passport.session();
+      return reqResNextFn;
+    })()
+
+  },
+}
 ```
 
+##### Overriding or disabling built-in HTTP middleware
 
-### Express Middleware In Sails
+You can also use the strategy described above to _override_ built-in middleware like the body parser (see [Customizing the body parser](http://sailsjs.com/documentation/reference/configuration/sails-config-http#?customizing-the-body-parser)).
+
+> While this is not recommended, you can even _disable_ a built-in HTTP middleware function entirely: just remove it from the `middleware.order` array.  This allows for complete flexibility, but it should be used with care.  If you choose to disable a piece of built-in middleware, make sure you fully understand the consequences.  (Disabling built-in HTTP middleware may cause dramatic changes in the way that your app works.)
+
+
+### Express middleware in Sails
 
 One of the really nice things about Sails apps is that they can take advantage of the wealth of already-existing Express/Connect middleware out there.  But a common question that arises when people _actually_ try to do this is:
 
@@ -74,9 +98,12 @@ In most cases, the answer is to install the Express middleware as a custom HTTP 
 
 > You should never override or remove the `router` HTTP middleware.  It is built-in to Sails, and without it, your app's explicit routes and blueprint routes will not work.
 
-### Express Routing Middleware In Sails
 
-You can also include Express middleware as a policy- just configure it in [`config/policies.js`](http://sailsjs.com/documentation/reference/sails.config/sails.config.policies.html).  You can either require and setup the middleware in an actual wrapper policy (usually a good idea) or just require it directly in your policies.js file.  The following example uses the latter strategy for brevity:
+##### Express middleware as policies
+
+To make Express middleware apply only to a particular action, you can also include Express middleware as a policy-- just be sure that you actually want it to run for both HTTP _and_ virtual socket requests.
+
+To do this, edit [`config/policies.js`](http://sailsjs.com/documentation/reference/sails.config/sails.config.policies.html).  You can either require and setup the middleware in an actual wrapper policy (usually a good idea) or just require it directly in your policies.js file.  The following example uses the latter strategy for brevity:
 
 ```js
 var auth = require('http-auth');
@@ -88,17 +115,14 @@ var basic = auth.basic({
 
 //...
 module.exports.policies = {
-  '*': true,
+  '*': [true],
 
-  ProductController: {
+  // Prevent end users from doing CRUD operations on products reserved for admins
+  // (uses HTTP basic auth)
+  'product/*': [auth.connect(basic)],
 
-    // Prevent end users from doing CRUD operations on products reserved for admins
-    // (uses HTTP basic auth)
-    '*': auth.connect(basic),
-
-    // Everyone can view product pages
-    show: true
-  }
+  // Everyone can view product pages
+  'product/show': [true]
 }
 ```
 
@@ -106,7 +130,7 @@ module.exports.policies = {
 
 <!--
 
-  TODO:
+  FUTURE:
 
 ### Advanced Express Middleware In Sails
 

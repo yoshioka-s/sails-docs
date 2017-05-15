@@ -12,25 +12,27 @@ In production, Sails performs like any Connect, Express or Socket.io app ([examp
 ### Example architecture
 
 ```
-                             ....                 
+                             ....
                     /  Sails.js server  \      /  Database (e.g. Mongo, Postgres, etc)
 Load Balancer  <-->    Sails.js server    <-->    Socket.io message queue (Redis)
                     \  Sails.js server  /      \  Session store (Redis, Mongo, etc.)
-                             ....                 
+                             ....
 ```
 
 
 ### Preparing your app for a clustered deployment
 
-The most important thing to remember about scaling a server-side application is that it should be **stateless**.  That means you should be able to deploy the same code to _n_ different servers, expecting any given incoming request handled by any given server, and everything should still work.  Luckily, Sails apps come ready for this kind of deployment almost right out of the box.  But before deploying your app to multiple servers, there are a few things you need to do:
+Node.js (and consequently Sails.js) apps scale horizontally. It's a powerful, efficient approach, but it involves a tiny bit of planning. At scale, you'll want to be able to copy your app onto multiple Sails.js servers and throw them behind a load balancer.
+
+One of the big challenges of scaling an application is that these sorts of clustered deployments cannot share memory, since they are on physically different machines. On top of that, there is no guarantee that a user will "stick" with the same server between requests (whether HTTP or sockets), since the load balancer will route each request to the Sails server with the most available resources. The most important thing to remember about scaling a server-side application is that it should be **stateless**.  That means you should be able to deploy the same code to _n_ different servers, expecting any given incoming request handled by any given server, and everything should still work.  Luckily, Sails apps come ready for this kind of deployment almost right out of the box.  But before deploying your app to multiple servers, there are a few things you need to do:
 
 + Ensure none of the other dependencies you might be using in your app rely on shared memory.
 + Make sure the database(s) for your models (e.g. MySQL, Postgres, Mongo) are scalable (e.g. sharding/cluster)
 + **If your app uses sessions:**
-  + Configure your app to use a shared session store such as Redis (simply uncomment the `adapter` option in `config/session.js`) and install the connect-redis adapter as a dependency of your app (e.g. `npm install connect-redis@~3.0.2 --save --save-exact`).
+  + Configure your app to use a shared session store such as Redis (simply uncomment the `adapter` option in `config/session.js`) and install the connect-redis adapter as a dependency of your app (e.g. `npm install connect-redis@~3.0.2 --save --save-exact`). For more information about configuring your session store for production, see the [sails.config.session](http://sailsjs.com/documentation/reference/configuration/sails-config-session#?production-config) docs.
 + **If your app uses sockets:**
-  + Configure your app to use Redis as a shared message queue for delivering socket.io messages (uncomment the `adapter` option in `config/sockets.js`)
-  + Install the socket.io-redis adapter as a dependency of your app (e.g. `npm install socket.io-redis@~1.0.0 --save --save-exact`)
+  + Configure your app to use Redis as a shared message queue for delivering socket.io messages. Socket.io (and consequently Sails.js) apps support Redis for sockets by default, so to enable a remote redis pubsub server, uncomment the relevant lines in `config/env/production.js`.
+  + Install the socket.io-redis adapter as a dependency of your app (e.g. `npm install socket.io-redis@^3.0.0 --save --save-exact`)
 + **If your cluster is on a single server (for instance, using [pm2 cluster mode](http://pm2.keymetrics.io/docs/usage/cluster-mode/))**
   + To avoid file conflict issues due to Grunt tasks, always start your apps in `production` environment, and/or consider [turning Grunt off completely](http://sailsjs.com/documentation/concepts/assets/disabling-grunt).  See [here](https://github.com/balderdashy/sails/issues/3577#issuecomment-184786535) for more details on Grunt issues in single-server clusters
   + Be careful with [`config/bootstrap.js` code](http://sailsjs.com/documentation/reference/configuration/sails-config-bootstrap) that persists data in a database, to avoid conflicts when the bootstrap runs multiple times (once per node in the cluster)
@@ -62,9 +64,6 @@ No matter what tool you're using, it is important to spend your focus and time o
 ### Notes
 
 > + You don't have to use Redis for your sessions-- you can actually use any Connect or Express-compatible session store.  See [sails.config.session](sailsjs.com/documentation/reference/configuration/sails-config-session) for more information.
-> + The default Socket.io configuration initially attempts to connect to the server using [long-polling](http://en.wikipedia.org/wiki/Push_technology#Long_polling).  In order for this to work, your server environment [must support](http://socket.io/blog/introducing-socket-io-1-0/#scalability) sticky load-balancing (aka sticky sessions), otherwise the handshake will fail until the connection is upgraded to use Websockets (and only if Websockets are available).
->   + On **Heroku**, you must have the sticky load-balancing beta feature [explicitly enabled](https://devcenter.heroku.com/articles/session-affinity).
->   + In an environment without stickky load balancing, you will need to set the `transports` setting in [config/sockets.js](https://github.com/balderdashy/sails-docs/blob/v0.11/reference/sails.config/sails.config.sockets.md) to `['websocket']`, forcing it to use websockets only and avoid long-polling.  You'll also need to set the transports in your socket client--if you're using `sails.io.js`, this is as easy as adding a `<script>io.sails.transports=['websocket']</script>` immediately after the `sails.io.js` script include.  For a rather dramatic read on the issue, see [this thread](https://github.com/Automattic/engine.io/issues/261).
-
+> + Some hosted Redis providers (such as <a href="https://elements.heroku.com/addons/redistogo" target="_blank">Redis To Go</a>) set a <a href="https://redis.io/topics/clients#client-timeouts" target="_blank">timeout for idle connections</a>.  In most cases you&rsquo;ll want to turn this off to avoid unexpected behavior in your app.  Details on how to turn off the timoeout vary depending on provider (you may have to contact their support team).
 
 <docmeta name="displayName" value="Scaling">

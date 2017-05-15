@@ -1,78 +1,92 @@
 # Models
 
-A model represents a collection of structured data, usually corresponding to a single table or collection in a database.  Models are usually defined by creating a file in an app's `api/models/` folder.
+A model represents a set of structured data, called records.  Models usually correspond to a table/collection in a database, attributes correspond to columns/fields, and records correspond to rows/documents.
+
+### Defining models
+
+By convention, models are defined by creating a file in a Sails app's `api/models/` folder:
 
 ```javascript
-// Parrot.js
-// The set of parrots registered in our app.
-module.exports = {
-  attributes: {
-    // e.g., "Polly"
-    name: {
-      type: 'string'
-    },
-
-    // e.g., 3.26
-    wingspan: {
-      type: 'float',
-      required: true
-    },
-
-    // e.g., "cm"
-    wingspanUnits: {
-      type: 'string',
-      enum: ['cm', 'in', 'm', 'mm'],
-      defaultsTo: 'cm'
-    },
-
-    // e.g., [{...}, {...}, ...]
-    knownDialects: {
-      collection: 'Dialect'
-    }
-  }
-}
-```
-
-<!--
-
 // api/models/Product.js
 module.exports = {
   attributes: {
-    nameOnMenu: { type: 'string' },
-    price: { type: 'string' },
-    percentRealMeat: { type: 'float' },
-    numCalories: { type: 'integer' }
-  }
-}
+    nameOnMenu: { type: 'string', required: true },
+    price: { type: 'string', required: true },
+    percentRealMeat: { type: 'number', defaultsTo: 20, columnType: 'FLOAT' },
+    numCalories: { type: 'number' },
+  },
+};
+```
+
+For a complete walkthrough of available options when setting up a model definition, see [Model Settings](http://sailsjs.com/documentation/concepts/models-and-orm/model-settings), [Attributes](http://sailsjs.com/documentation/concepts/models-and-orm/attributes), and [Associations](http://sailsjs.com/documentation/concepts/models-and-orm/associations).
+
+<!--
+commented-out content at: https://gist.github.com/rachaelshaw/1d7a989f6685f11134de3a5c47b2ebb8#1
+
+
+commented-out content at: https://gist.github.com/rachaelshaw/1d7a989f6685f11134de3a5c47b2ebb8#2
 -->
+
 
 
 ### Using models
 
+Once a Sails app is running, its models may be accessed from within controller actions, helpers, tests, and just about anywhere else you normally write code.  This lets your code call model methods to communicate with your database (or even with multiple databases).
 
-Models may be accessed from our controllers, policies, services, responses, tests, and in custom model methods.  There are many built-in methods available on models, the most important of which are the query methods: [find](http://sailsjs.com/documentation/reference/waterline/models/find.html), [create](http://sailsjs.com/documentation/reference/waterline/models/create.html), [update](http://sailsjs.com/documentation/reference/waterline/models/update.html), and [destroy](http://sailsjs.com/documentation/reference/waterline/models/destroy.html).  These methods are [asynchronous](https://github.com/balderdashy/sails-docs/blob/master/PAGE_NEEDED.md) - under the covers, Waterline has to send a query to the database and wait for a response.
-
-
-Consequently, query methods return a deferred query object.  To actually execute a query, `.exec(cb)` must be called on this deferred object, where `cb` is a callback function to run after the query is complete.
-
-Waterline also includes opt-in support for promises.  Instead of calling `.exec()` on a query object, we can call `.then()`, `.spread()`, or `.catch()`, which will return a [Bluebird promise](https://github.com/petkaantonov/bluebird).
+There are many built-in methods available on models, the most important of which are the query methods like [.find()](http://sailsjs.com/documentation/reference/waterline/models/find) and [.create()](http://sailsjs.com/documentation/reference/waterline/models/create).  You can find detailed usage documentation for methods like these in [Reference > Waterline (ORM) > Models](http://sailsjs.com/documentation/reference/waterline-orm/models).
 
 
+### Query methods
+
+Every model in Waterline will have a set of query methods exposed on it to allow you to interact with the database in a normalized fashion. These are known as the CRUD (Create-Read-Update-Delete) methods and is the primary way of interacting with your data.
+
+Since they have to send a query to the database and wait for a response, query methods are **asynchronous functions**.  That is, they don't come back with an answer right away.  Like other asynchronous functions in JavaScript (`setTimeout()` for example), that means we need some other way of determining when they've finished executing, whether they were successful, and if not, what kind of error (or other exceptional circumstance) occurred.
+
+In Node.js, Sails, and JavaScript in general, the classic way to support this paradigm is by using _callbacks_.
+
+##### Callbacks
+
+For convenience, built-in model methods return a _deferred object_ known as a "query":
+
+```javascript
+var query = User.findOne({ name: 'Rose' });
+```
+
+After running [the code above](https://gist.github.com/mikermcneil/c6a033d56497e9930a363a2949284fd3), our app has not _actually_ talked to the database yet.  To actually execute a query, `.exec(cb)` must be called on this deferred object, where `cb` is a callback function to run after the query is complete:
+
+```javascript
+query.exec(function (err, rose) {
+  if (err) { return res.serverError(err); }
+  if (!rose) { return res.notFound(); }
+  return res.json(rose);
+});
+```
+
+> In addition to `.exec()`, many Sails apps benefit from using the [async](https://www.npmjs.com/package/async) library.  In fact, to facilitate this, Sails provides an [easy way](http://sailsjs.com/documentation/reference/configuration/sails-config-globals) to access `async` throughout your app.
 
 
+##### Promises
 
-### Model Methods (aka "static" or "class" methods)
+As an alternative to callbacks, Waterline also includes opt-in support for promises.  Instead of calling `.exec()` on a query, you can choose to call `.then()`, `.spread()`, or `.catch()`, which will begin executing the query and return a [Bluebird promise](https://github.com/petkaantonov/bluebird).
 
-Model class methods are functions built into the model itself that perform a particular task on its instances (records).  This is where you will find the familiar CRUD methods for performing database operations like `.create()`, `.update()`, `.destroy()`, `.find()`, etc.
+> If you are not already an avid user of promises, don't worry-- [just stick with `.exec()`](https://github.com/balderdashy/sails/issues/3459#issuecomment-171039631).  The decision of whether to use callbacks or promises is a question of style, so don't feel pressured one way or the other.
+
+### Resourceful pubsub methods
+
+Sails also provides a few other "resourceful pubsub" (or "RPS") methods, specifically designed for performing simple realtime operations using dynamic rooms.  For more information about those methods, see [Reference > WebSockets > Resourceful PubSub](http://sailsjs.com/documentation/reference/web-sockets/resourceful-pub-sub).
 
 
-###### Custom model methods
+### Custom model methods
 
-Waterline allows you to define custom methods on your models.  This feature takes advantage of the fact that Waterline models ignore unrecognized keys, so you do need to be careful about inadvertently overriding built-in methods and dynamic finders (don't define methods named "create", etc.)  Custom model methods are most useful for extrapolating controller code that relates to a particular model; i.e. this allows you to pull code out of your controllers and into reusuable functions that can be called from anywhere (i.e. don't depend on `req` or `res`.)
+In addition to the built-in functionality provided by Sails, you can also define your own custom model methods.  Custom model methods are most useful for extrapolating controller code that relates to a particular model; i.e. this allows you to pull code out of your controllers and into reusuable functions that can be called from anywhere (i.e. don't depend on `req` or `res`.)
 
-Model methods are generally asynchronous functions.  By convention, asynchronous model methods should be 2-ary functions, which accept an object of inputs as their first argument (usually called `opts` or `options`) and a Node callback as the second argument.  Alternatively, you might opt to return a promise (both strategies work just fine- it's a matter of preference.  If you don't have a preference, stick with Node callbacks.)
+> This feature takes advantage of the fact that models ignore unrecognized settings, so you do need to be careful about inadvertently overriding built-in methods (don't define methods named "create", etc.)
 
-A best practice is to write your static model method so that it can accept either a record OR its primary key value.  For model methods that operate on/from _multiple_ records at once, you should allow an array of records OR an array of primary key values to be passed in.  This takes more time to write, but makes your method much more powerful.  And since you're doing this to extrapolate commonly-used logic anyway, it's usually worth the extra effort.
+Model methods can be synchronous or asynchronous functions, but more often than not, they're _asynchronous_.  By convention, asynchronous model methods should be 2-ary functions, which accept `options` as their first argument, and a Node-style callback as the second argument.  Alternatively, instead of a callback, you might choose to return a promise (both strategies work just fine- it's a matter of preference.  If you don't have a preference, stick with Node callbacks.)
+
+##### Best practices
+
+One best practice is to write your static model method so that it can accept either a record OR its primary key value.  For model methods that operate on/from _multiple_ records at once, you should allow an array of records OR an array of primary key values to be passed in.  This takes more time to write, but makes your method much more powerful.  And since you're doing this to extrapolate commonly-used logic anyway, it's usually worth the extra effort.
 
 For example:
 
@@ -100,7 +114,7 @@ findWithSameNameAsPerson: function (opts, cb) {
       return cb(err);
     }
 
-    Monkey.findByName(person.name)
+    Monkey.find({ name: person.name })
     .exec(function (err, monkeys){
       if (err) return cb(err);
       cb(null, monkeys);
@@ -120,182 +134,46 @@ Monkey.findWithSameNameAsPerson(37, function (err, monkeys) { ... });
 
 > For more tips, read about the incident involving [Timothy the Monkey]().
 
-Another example:
+##### What about instance methods?
 
-```javascript
-// api/models/User.js
-module.exports = {
+As of Sails v1.0, instance methods have been removed from Sails and Waterline.  While instance methods like `.save()` and `.destroy()` were sometimes convenient in app code, in Node.js at least, many users found that they led to unintended consequences and design pitfalls.
 
-  attributes: {
-
-    name: {
-      type: 'string'
-    },
-    enrolledIn: {
-      collection: 'Course', via: 'students'
-    }
-  },
-
-  /**
-   * Enrolls a user in one or more courses.
-   * @param  {Object}   options
-   *            => courses {Array} list of course ids
-   *            => id {Integer} id of the enrolling user
-   * @param  {Function} cb
-   */
-  enroll: function (options, cb) {
-
-    User.findOne(options.id).exec(function (err, theUser) {
-      if (err) return cb(err);
-      if (!theUser) return cb(new Error('User not found.'));
-      theUser.enrolledIn.add(options.courses);
-      theUser.save(cb);
-    });
-  }
-};
-```
-
-
-#### Dynamic Finders
-
-These are special static methods that are dynamically generated by Sails when you lift your app.  For instance, if your Person model has a "firstName", you might run:
-
-```js
-Person.findByFirstName('emma').exec(function(err,people){ ... });
-```
-
-
-#### Resourceful Pubsub Methods
-
-A special type of model methods which are attached by the pubsub hook.  More on that in the [section of the docs on resourceful pubsub](http://sailsjs.com/documentation/reference/websockets/resourceful-pubsub).
-
-
-<!--
-another special type of class method.  It stands for 'Publish, Subscribe' and that's just what they do. These methods play a big role in how Sails integrates and utilizes Socket.IO.  They are used to subscribe clients to and publish messages about the creation, update, and destruction of models.  If you want to build real-time functionality in Sails, these will come in handy.
--->
-
-#### Attribute Methods (i.e. record/instance methods)
-
-Attribute methods are functions available on records (i.e. model instances) returned from Waterline queries.  For example, if you find the ten students with the highest GPA from the Student model, each of those student records will have access to all the built-in attribute methods, as well as any custom attribute methods defined on the Student model.
-
-###### Built-in attribute methods
-Every Waterline model includes some attribute methods automatically, including:
-
-+ [`.toJSON()`](http://sailsjs.com/documentation/reference/waterline/records/toJSON.html)
-+ [`.save()`](http://sailsjs.com/documentation/reference/waterline/records/save.html)
-+ [`.destroy()`](http://sailsjs.com/documentation/reference/waterline/models/destroy.html)
-+ [`.validate()`](http://sailsjs.com/documentation/reference/waterline/records/validate.html)
-
-
-<!-- note to self- we should bundle a getPrimaryKeyValue() attribute method on every model in waterline core (or maybe just getId() since "id" is simpler to understand) ~mike - aug2,2014 -->
-
-
-###### Custom attribute methods
-
-Waterline models also allow you to define your own custom attribute methods.  Define them like any other attribute, but instead of an attribute definition object, write a function on the right-hand-side.
-
-
-```js
-// From api/models/Person.js...
-
-module.exports = {
-  attributes: {
-    // Primitive attributes
-    firstName: {
-      type: 'string',
-      defaultsTo: ''
-    },
-    lastName: {
-      type: 'string',
-      defaultsTo: ''
-    },
-    age: {
-      type: 'integer'
-    },
-
-    // Associations (aka relational attributes)
-    spouse: { model: 'Person' },
-    pets: { collection: 'Pet' },
-
-    // Attribute methods
-    getFullName: function (){
-      return this.firstName + ' ' + this.lastName;
-    },
-    isMarried: function () {
-      return !!this.spouse;
-    },
-    isEligibleForSocialSecurity: function (){
-      return this.age >= 65;
-    },
-  }
-};
-```
-
-> Note that with the notable exception of the built-in `.save()` and `.destroy()` attribute methods, attribute methods are almost always _synchronous_ by convention.
->
-> Also note that custom attributes methods are not serialized to JSON by default.  To serialize them, you can override [toJSON](http://sailsjs.com/documentation/reference/waterline-orm/records/to-json).
-
-###### When to write a custom attribute method
-
-Custom attribute methods are particularly useful for extracting some information out of a record.  I.e. you might want to reduce some information from one or more attributes (i.e. "is this person married?")
-
-```js
-if ( rick.isMarried() ) {
-  // ...
-}
-```
-
-
-
-###### When NOT to write a custom attribute method
-
-You should **avoid writing your own _asynchronous_ attribute methods**.  While built-in asynchronous attribute methods like `.save()` and `.destroy()` can be convenient from your app code, writing your _own_ asynchronous attribute methods can sometimes have unintended consequences, and is not the most efficient way to build your app.
-
-For instance, consider an app that manages wedding records.  You might think to write an attribute method on the Person model that updates the `spouse` attribute on both individuals in the database.  This would allow you to write controller code like:
+For example, consider an app that manages wedding records.  It might seem like a good idea to write an instance method on the Person model to update the `spouse` attribute on both individuals in the database.  This would allow you to write controller code like:
 
 ```js
 personA.marry(personB, function (err) {
-  if (err) return res.negotiate(err);
+  if (err) { return res.serverError(err); }
   return res.ok();
 })
 ```
 
-Which looks great...until you need to write a different action where you don't have an actual record for "personA".
+Which looks great...until it comes time to implement a slightly different action with roughly the same logic, but where the only available data is the id of "personA" (not the entire record.)  In that case, you're stuck rewriting your instance method as a static method anyway!
 
-A better strategy is to write a custom (static) model method instead.  This makes your function more reusable/versatile, since it will be accessible whether or not you have an actual record instance on hand.  You might refactor the code from the previous example to look like:
+A better strategy is to write a custom (static) model method from the get-go.  This makes your function more reusable/versatile, since it will be accessible whether or not you have an actual record instance on hand.  You might refactor the code from the previous example to look like:
 
 ```js
-Person.marry([joe,raquel], function (err) {
-  if (err) return res.negotiate(err);
+Person.marry(personA.id, personB.id, function (err) {
+  if (err) { return res.serverError(err); }
   return res.ok();
 })
 ```
 
+### Case Sensitivity
 
+Queries in Sails 1.0 are no longer forced to be case *insensitive* regardless of how the database processes the query. This leads to much improved query performance and better index utilization. Most databases are case *sensitive* by default but in the rare cases where they aren't and you would like to change that behavior you must modify the database to do so.
 
-###### Naming your attribute methods
-Make sure you use a naming convention that helps you avoid confusing **attribute methods** from _attribute values_ when you're working with records in your app.  A good best practice is to use "get*" or "is*" (e.g. `getFullName()` or `isMarried()`) prefix and avoid writing attribute methods that change records in-place.
+For example by default MySQL will use a database collation that is case *insensitive* which is different from sails-disk so you may experience different results from development to production. In order to fix this you can set the tables in your MySQL database to a case *sensitive* collation such as `utf8_bin`.
+
 
 <!--
-
-Imagine you have a small monkey named Timothy that rides on your shoulders and styles your hair when you are scheduled to speak at a conference.  In this scenario, you are a record of the `Person` model and Timothy is a record of the `Monkey` model. The `Person` model has primitive attributes like "name", "email", and "phoneNumber", and relational attributes like "petMonkey" (points to an individual `Monkey`) and "mom" (points to an individual `Person`).  Meanwhile the `Monkey` model has primitive attributes "name", "age", and "demeanor", as well as an relational attribute: "petOfPerson" (which points to an individual person).
-
-
-Everyone knows that a person can style her own hair, but it is more efficient if her pet monkey does it.  We can represent this by definining `styleHair: function (cb){ return cb(); }` as an attribute method on Person and `styleOwnersHair: function (cb){ return cb();}` as an attribute method on Monkey.
+commented-out content at: https://gist.github.com/rachaelshaw/1d7a989f6685f11134de3a5c47b2ebb8#3
 
 
-If your app involves multigenerational hair-styling, you might think it would make sense to write an attribute method on the Monkey model called "getOwnersGrandma()" which would call a callback with the monkey's owner's mom's mom.
+commented-out content at: https://gist.github.com/rachaelshaw/1d7a989f6685f11134de3a5c47b2ebb8#4
+
+commented-out content at: https://gist.github.com/rachaelshaw/1d7a989f6685f11134de3a5c47b2ebb8#5
+
+commented-out content at: https://gist.github.com/rachaelshaw/1d7a989f6685f11134de3a5c47b2ebb8#6
 -->
-
-<!--
-
-###### an aside about promises
-
-Promises are most effective when used to handle asynchronous, but referentially transparent ("nullipotent") operations; i.e. logic without any side-effects.
--->
-
-
-
-
 
 <docmeta name="displayName" value="Models">

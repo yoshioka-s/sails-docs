@@ -4,7 +4,7 @@
 
 The i18n hook reads JSON-formatted translation files from your project's "locales" directory (`config/locales` by default).  Each file corresponds with a [locale](http://en.wikipedia.org/wiki/Locale) (usually a language) that your Sails backend will support.
 
-These files contain locale-specific strings (as JSON key-value pairs) that you can use in your views, controllers, etc. The name of the file should match the language that you are supporting. This allows for automatic language detection based on request headers.
+These files contain locale-specific strings (as JSON key-value pairs) that you can use in your views, controllers, etc.  The name of the file should match the language that you are supporting. This allows for automatic language detection based on request headers.
 
 Here is an example locale file (`config/locales/es.json`):
 ```json
@@ -12,6 +12,14 @@ Here is an example locale file (`config/locales/es.json`):
     "Hello!": "Hola!",
     "Hello %s, how are you today?": "¿Hola %s, como estas?"
 }
+```
+
+Locales can be accessed in controller actions and policies through `res.i18n()`, or in views through the `__(key)` or `i18n(key)` functions.
+
+```ejs
+<h1> <%= __('Welcome to PencilPals!') %> </h1>
+<h2> <%= i18n('Hello %s, how are you today?', 'Pencil Maven') %> </h2>
+<p> <%= i18n('That\'s right-- you can use either i18n() or __()') %> </p>
 ```
 
 Note that the keys in your stringfiles (e.g. "Hello %s, how are you today?") are **case sensitive** and require exact matches.  There are a few different schools of thought on the best approach here, and it really depends on who/how often you'll be editing the stringfiles vs. HTML in the future.  Especially if you'll be editing the translations by hand, simpler, all-lowercase key names may be preferable for maintainability.
@@ -58,16 +66,7 @@ req.setLocale('de');
 // (this will use the strings located in `config/locales/de.json` for translation)
 ```
 
-By default, node-i18n will detect the desired language of a request by examining its language headers.  Language headers are set in your users' browser settings, and while they're correct most of the time, you may need the flexibility to override this detected locale and provide your own.
+By default, node-i18n will detect the desired language of a request by examining its language headers.  Language headers are set in your users' browser settings, and while they're correct most of the time, you may need the flexibility to override this detected locale and provide your own.  (For a deeper dive into one way you might go about implementing this, check out [this gist](https://gist.github.com/mikermcneil/0af155ed546f3ddf164b4885fb67830c).)
 
-For instance, if your app allows users to pick their preferred language, you might create a [policy](http://sailsjs.com/documentation/concepts/Policies) which checks for a custom language in the user's session, and if one exists, sets the appropriate locale for use in subsequent policies, controller actions, and views:
-
-```js
-// api/policies/localize.js
-module.exports = function(req, res, next) {
-  req.setLocale(req.session.languagePreference);
-  next();
-};
-```
 
 <docmeta name="displayName" value="Locales">

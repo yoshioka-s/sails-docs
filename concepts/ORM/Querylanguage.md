@@ -1,8 +1,7 @@
-# Waterline Query Language
+# Waterline query language
 
 The Waterline Query language is an object-based syntax used to retrieve the records from any supported database.  Under the covers, Waterline uses the database adapter(s) installed in your project to translates this language into native queries, and then to send those queries to the appropriate database.  This means that you can use the same query with MySQL as you do with Redis, or MongoDb. And it allows you to change your database with minimal (if any) changes to your application code.
 
-> All queries inside of Waterline are case-insensitive. While this allows for more consistent querying across databases, depending on the database you're using, it can make indexing strings tough.  This is something to be aware of if you plan to create indexes in your database to optimize the performance of searching on string fields.
 
 ### Query Language Basics
 
@@ -52,13 +51,13 @@ Model.find({
   name: 'walter',
   state: 'new mexico'
 }).exec(function (err, waltersFromNewMexico) {
-  
+
 });
 ```
 
-#### Modified Pairs
+#### Complex Constaints
 
-Modified pairs also have model attributes for keys but they also use any of the supported criteria modifiers to perform queries where a strict equality check wouldn't work.
+Complex constraints also have model attributes for keys but they also use any of the supported criteria modifiers to perform queries where a strict equality check wouldn't work.
 
 ```javascript
 Model.find({
@@ -68,9 +67,9 @@ Model.find({
 })
 ```
 
-#### In Pairs
+#### In Modifier
 
-Provide an array to find records whose value for this attribute exactly matches (case-insensitive) _any_ of the specified search terms.
+Provide an array to find records whose value for this attribute exactly matches _any_ of the specified search terms.
 
 > This is more or less equivalent to "IN" queries in SQL, and the `$in` operator in MongoDB.
 
@@ -82,9 +81,9 @@ Model.find({
 });
 ```
 
-#### Not-In Pairs
+#### Not-In Modifier
 
-Provide an array wrapped in a dictionary under a `!` key (like `{ '!': [...] }`) to find records whose value for this attribute _ARE NOT_ exact matches (case-insensitive) for any of the specified search terms.
+Provide an array wrapped in a dictionary under a `!` key (like `{ '!': [...] }`) to find records whose value for this attribute _ARE NOT_ exact matches for any of the specified search terms.
 
 > This is more or less equivalent to "NOT IN" queries in SQL, and the `$nin` operator in MongoDB.
 
@@ -96,9 +95,9 @@ Model.find({
 });
 ```
 
-#### Or Pairs
+#### Or Predicate
 
-Use the `or` modifier to match _any_ of the nested rulesets you specify as an array of query pairs.  For records to match an `or` query, they must match at least one of the specified query pairs in the `or` array.
+Use the `or` modifier to match _any_ of the nested rulesets you specify as an array of query pairs.  For records to match an `or` query, they must match at least one of the specified query modifiers in the `or` array.
 
 ```javascript
 Model.find({
@@ -115,18 +114,21 @@ Model.find({
 
 The following modifiers are available to use when building queries.
 
-* `'<'` / `'lessThan'`
-* `'<='` / `'lessThanOrEqual'`
-* `'>'` / `'greaterThan'`
-* `'>='` / `'greaterThanOrEqual'`
-* `'!'` / `'not'`
+* `'<'`
+* `'<='`
+* `'>'`
+* `'>='`
+* `'!='`
+* `'nin'`
+* `'in'`
 * `'like'`
 * `'contains'`
 * `'startsWith'`
 * `'endsWith'`
 
+> Note that the availability and behavior of the criteria modifiers when matching against attributes with [JSON attributes](http://sailsjs.com/documentation/concepts/models-and-orm/validations#?builtin-data-types) may vary according to the database adapter you&rsquo;re using.  For instance, while `sails-postgresql` will map your JSON attributes to the <a href="https://www.postgresql.org/docs/9.4/static/datatype-json.html" target="_blank">JSON column type</a>, you&rsquo;ll need to [send a native query](http://sailsjs.com/documentation/reference/waterline-orm/datastores/send-native-query) in order to query those attributes directly.  On the other hand, `sails-mongo` supports queries against JSON-type attributes, but you should be aware that if a field contains an array, the query criteria will be run against every _item_ in the array, rather than the array itself (this is based on the behavior of MongoDB itself).
 
-#### '<' / 'lessThan'
+#### '<'
 
 Searches for records where the value is less than the value specified.
 
@@ -134,7 +136,7 @@ Searches for records where the value is less than the value specified.
 Model.find({ age: { '<': 30 }})
 ```
 
-#### '<=' / 'lessThanOrEqual'
+#### '<='
 
 Searches for records where the value is less or equal to the value specified.
 
@@ -142,7 +144,7 @@ Searches for records where the value is less or equal to the value specified.
 Model.find({ age: { '<=': 21 }})
 ```
 
-#### '>' / 'greaterThan'
+#### '>'
 
 Searches for records where the value is more than the value specified.
 
@@ -150,7 +152,7 @@ Searches for records where the value is more than the value specified.
 Model.find({ age: { '>': 18 }})
 ```
 
-#### '>=' / 'greaterThanOrEqual'
+#### '>='
 
 Searches for records where the value is more or equal to the value specified.
 
@@ -158,31 +160,51 @@ Searches for records where the value is more or equal to the value specified.
 Model.find({ age: { '>=': 21 }})
 ```
 
-#### '!' / 'not'
+#### '!='
 
 Searches for records where the value is not equal to the value specified.
 
 ```javascript
 Model.find({
-  name: { '!': 'foo' }
+  name: { '!=': 'foo' }
+})
+```
+
+#### 'in'
+
+Searches for records where the value is in the list of values.
+
+```javascript
+Model.find({
+  name: { 'in': ['foo', 'bar'] }
+})
+```
+
+#### 'nin'
+
+Searches for records where the value is NOT in the list of values.
+
+```javascript
+Model.find({
+  name: { 'nin': ['foo', 'bar'] }
 })
 ```
 
 #### 'contains'
 
-Searches for records where the value for this attribute _contains_ the given string. (Case insensitive.)
+Searches for records where the value for this attribute _contains_ the given string.
 
 ```javascript
 Model.find({
   subject: { contains: 'music' }
 }).exec(function (err, musicCourses){
-  
+
 });
 ```
 
 #### 'startsWith'
 
-Searches for records where the value for this attribute _starts with_ the given string. (Case insensitive.)
+Searches for records where the value for this attribute _starts with_ the given string.
 
 ```javascript
 Model.find({
@@ -194,7 +216,7 @@ Model.find({
 
 #### 'endsWith'
 
-Searches for records where the value for this attribute _ends with_ the given string. (Case insensitive.)
+Searches for records where the value for this attribute _ends with_ the given string.
 
 ```javascript
 Model.find({
@@ -206,7 +228,7 @@ Model.find({
 
 #### 'like'
 
-Searches for records using pattern matching with the `%` sign. (Case insensitive.)
+Searches for records using pattern matching with the `%` sign.
 
 ```javascript
 Model.find({ food: { 'like': '%beans' }})
@@ -237,6 +259,8 @@ Limits the number of results returned from a query.
 Model.find({ where: { name: 'foo' }, limit: 20 })
 ```
 
+> Note: if you set `limit` to 0, the query will always return an empty array.
+
 #### Skip
 
 Returns all the results excluding the number of items to skip.
@@ -264,7 +288,7 @@ Model.find().paginate({page: 2, limit: 10});
 > You can find out more about the Waterline API below:
 > * [Sails.js Documentation](http://sailsjs.com/documentation/reference/waterline/queries)
 > * [Waterline README](https://github.com/balderdashy/waterline/blob/master/README.md)
-> * [Waterline Documentation](https://github.com/balderdashy/waterline-docs)
+> * [Waterline Reference Docs](http://sailsjs.com/documentation/reference/waterline-orm)
 > * [Waterline Github Repository](https://github.com/balderdashy/waterline)
 
 
@@ -283,18 +307,12 @@ Model.find({ where: { name: 'foo' }, sort: 'name DESC' });
 // Sort by name in ascending order
 Model.find({ where: { name: 'foo' }, sort: 'name ASC' });
 
-// Sort by binary notation
-Model.find({ where: { name: 'foo' }, sort: { 'name': 1 }});
+// Sort by object notation
+Model.find({ where: { name: 'foo' }, sort: [{ 'name': 'ASC' }});
 
 // Sort by multiple attributes
-Model.find({ where: { name: 'foo' }, sort: { name:  1, age: 0 });
+Model.find({ where: { name: 'foo' }, sort: [{ name:  'ASC'}, { age: 'DESC' }]);
 ```
 
-> **Case-sensitivity**
->
-> All queries inside of Waterline are **case-insensitive**. This allows for easier querying but makes indexing strings tough. This is something to be aware of if you are indexing and searching on string fields.
->
-> Currently, the best way to execute **case-sensitive** queries is using the [`.native()`](http://sailsjs.com/documentation/reference/waterline/models/native.html) or [`.query()`](http://sailsjs.com/documentation/reference/waterline/models/query.html) method.
 
-
-<docmeta name="displayName" value="Query Language">
+<docmeta name="displayName" value="Query language">

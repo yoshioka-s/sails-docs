@@ -1,4 +1,4 @@
-# Using Hooks in a Sails App
+# Using hooks in a Sails app
 
 ## Using a project hook
 To use a project hook in your app, first create the `api/hooks` folder if it doesn&rsquo;t already exist.  Then [create the project hook](http://sailsjs.com/documentation/concepts/extending-sails/Hooks/projecthooks.html) or copy the folder for the hook you want to use into `api/hooks`.
@@ -13,9 +13,9 @@ Any methods that a hook exposes are available in the `sails.hooks[<hook-name>]` 
 Once you&rsquo;ve added an installable hook to your app, you can configure it using the regular Sails config files like `config/local.js`, `config/env/development.js`, or a custom config file you create yourself.  Hook settings are typically namespaced under the hook&rsquo;s name, with any `sails-hook-` prefix stripped off.  For example, the `from` setting for `sails-hook-email` is available as `sails.config.email.from`.  The documentation for the installable hook should describe the available configuration options.
 
 ## Changing the way Sails loads an installable hook
-On rare occassions, you may need to change the name that Sails uses for an installable hook, or change the configuration key that the hook uses.  This may be the case if you already have a project hook with the same name as an installable hook, or if you&rsquo;re already using a configuration key for something else.  To avoid these conflicts, Sails provides the `sails.config.installedHooks.<hook-identity>` configuration option.  The hook identity is *always* the name of the folder that the hook is installed in.  
+On rare occassions, you may need to change the name that Sails uses for an installable hook, or change the configuration key that the hook uses.  This may be the case if you already have a project hook with the same name as an installable hook, or if you&rsquo;re already using a configuration key for something else.  To avoid these conflicts, Sails provides the `sails.config.installedHooks.<hook-identity>` configuration option.  The hook identity is *always* the name of the folder that the hook is installed in.
 
-```
+```javascript
 // config/installedHooks.js
 module.exports.installedHooks = {
    "sails-hook-email": {
@@ -36,5 +36,5 @@ module.exports.installedHooks = {
 
 
 
-<docmeta name="displayName" value="Using Hooks">
+<docmeta name="displayName" value="Using hooks">
 <docmeta name="stabilityIndex" value="3">

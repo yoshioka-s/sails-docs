@@ -1,4 +1,4 @@
-# Using Sails Programmatically
+# Using Sails programmatically
 
 ### Overview
 
@@ -22,12 +22,16 @@ Once you have a reference to a new Sails app, you can use [`.load()`](http://sai
 
 > Any configuration options sent as arguments to `.load()` or `.lift()` will take precedence over options loaded from anywhere else.
 
+> Configuration options set via environment variables will _not_ automatically be applied to Sails app started programmatically, with the exception of `NODE_ENV` and `PORT`.
+
+> To load configuration options from `.sailsrc` files and environment variables, use the `rc` module that Sails makes available via `require('sails/accessible/rc')`.
+
 The difference between `.load()` and `.lift()` is that `.lift()` takes the additional steps of (1) running the app's [bootstrap](http://sailsjs.com/documentation/reference/configuration/sails-config-bootstrap), if any, and (2) starting an HTTP server on the port configured via `sails.config.port` (1337 by default).  This allows you to make HTTP requests to the lifted app.  To make requests to an app started with `.load()`, you can use the [`.request()`](http://sailsjs.com/documentation/reference/application/sails-request) method of the loaded app.
 
 
-#### .lift()
+##### .lift()
 
-Starting an app with .lift() on port 1338 and sending a POST request via HTTP:
+Starting an app with `.lift()` on port 1338 and sending a POST request via HTTP:
 
 ```javascript
 var request = require('request');
@@ -42,12 +46,12 @@ mySailsApp.lift({
     console.error('Failed to lift app.  Details:', err);
     return;
   }
-  
+
   // --•
   // Make a request using the "request" library and display the response.
   // Note that you still must have an `api/controllers/FooController.js` file
-  // under the current working directory, or a `/foo` or `POST /foo` route
-  // set up in `config/routes.js`.
+  // under the current working directory, with an `index` action,
+  // or a `/foo` or `POST /foo` route set up in `config/routes.js`.
   request.post('/foo', function (err, response) {
     if (err) {
       console.log('Could not send HTTP request.  Details:', err);
@@ -66,13 +70,26 @@ mySailsApp.lift({
 
       // --•
       console.log('Successfully lowered Sails app.');
-      
+
     });//</lower sails app>
   });//</request.post() :: send http request>
 });//</lift sails app>
 ```
 
-#### .load()
+Starting an app with `.lift()` using the current environment and .sailsrc settings:
+
+```javascript
+var Sails = require('sails').constructor;
+
+var rc = require('sails/accessible/rc');
+
+var mySailsApp = new Sails();
+mySailsApp.lift(rc('sails'), function(err) {
+
+});
+```
+
+##### .load()
 
 Here's an alternative to the previous example:  Starting a Sails app with `.load()` and sending what is _semantically_ the same POST request-- but this time, under the covers we'll use a virtual request instead of HTTP:
 
@@ -84,12 +101,12 @@ mySailsApp.load({
     console.error('Failed to load app.  Details:', err);
     return;
   }
-  
+
   // --•
   // Make a request using the "request" method and display the response.
   // Note that you still must have an `api/controllers/FooController.js` file
-  // under the current working directory, or a `/foo` or `POST /foo` route
-  // set up in `config/routes.js`.
+  // under the current working directory, with an `index` action,
+  // or a `/foo` or `POST /foo` route set up in `config/routes.js`.
   mySailsApp.request({url:'/foo', method: 'post'}, function (err, response) {
     if (err) {
       console.log('Could not send virtual request.  Details:', err);
@@ -108,13 +125,13 @@ mySailsApp.load({
 
       // --•
       console.log('Successfully lowered Sails app.');
-      
+
     });//</lower sails app>
   });//</send virtual request to sails app>
 });//</load sails app (but not lift!)>
 ```
 
-#### .lower()
+##### .lower()
 
 To stop an app programmatically, use `.lower()`:
 
@@ -124,15 +141,29 @@ mySailsApp.lower(function(err) {
      console.log('An error occured when attempting to stop app:', err);
      return;
   }
-  
+
   // --•
   console.log('Lowered app successfully.');
-  
+
 });
 ```
+
+##### Using `moduleDefinitions` to add actions, models and more
+
+Whenever a Sails app starts, it typically loads and initializes all modules stored in `api/*` (e.g. models from `api/models`, policies from `api/policies`, etc.).  You can add _additional_ modules by specifying them in the runtime configuration passed in as the first argument to `.load()` or `.lift()`, using the `moduleDefinitions` key.  This is mainly useful when running tests.
+
+The following Sails modules can be added programmatically:
+
+  Module type          | Config key        | Details
+ :------------------   |:----------        |:-------
+ Actions | `controllers.moduleDefinitions` | A dictionary mapping [standalone action](http://sailsjs.com/documentation/concepts/actions-and-controllers#?standalone-actions) paths to action definitions ([classic](http://sailsjs.com/documentation/concepts/actions-and-controllers#?classic-actions) or [Actions2](http://sailsjs.com/documentation/concepts/actions-and-controllers#?actions-2)).
+ Helpers | `helpers.moduleDefinitions` | A dictionary mapping helper names to helper definitions.
+ Models  | `orm.moduleDefinitions.models` | A dictionary mapping model identities (lower-cased model names) to model definitions.
+ Policies | `policies.moduleDefinitions` | A dictionary mapping policy names (e.g. `isAdmin`) to policy functions.
+
 
 ### Reference
 
 The full reference for Sails' programmatic interface is available in [**Reference > Application**](http://sailsjs.com/documentation/reference/application).
 
-<docmeta name="displayName" value="Programmatic Usage">
+<docmeta name="displayName" value="Programmatic usage">

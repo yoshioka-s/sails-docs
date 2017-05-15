@@ -1,6 +1,6 @@
-# Model Settings
+# Model settings
 
-In Sails, the top-level properties of model definitions are called **model settings**.  This includes everything from [attribute definitions](http://sailsjs.com/documentation/concepts/models-and-orm/model-settings#?attributes), to the [database settings](http://sailsjs.com/documentation/concepts/models-and-orm/model-settings#?connection) the model will use, as well as a number of other options.
+In Sails, the top-level properties of model definitions are called **model settings**.  This includes everything from [attribute definitions](http://sailsjs.com/documentation/concepts/models-and-orm/model-settings#?attributes), to the [database settings](http://sailsjs.com/documentation/concepts/models-and-orm/model-settings#?datastore) the model will use, as well as a few other options.
 
 The majority of this page is devoted to a complete tour of the model settings supported by Sails.  But before we begin, let's look at how to actually apply these settings in a Sails app.
 
@@ -13,32 +13,127 @@ Model settings allow you to customize the behavior of the models in your Sails a
 
 To modify the [default model settings](http://sailsjs.com/documentation/reference/configuration/sails-config-models) shared by all of the models in your app, edit [`config/models.js`](http://sailsjs.com/documentation/anatomy/my-app/config/models-js).
 
-For example, if you edit `config/models.js` so that it contains `connection: 'somePostgresqlDb'`, then, assuming you've defined a connection named `somePostgresqlDb`, you'll set PostgreSQL as your default database.  In other words, unless overridden, all of your app's models will use that PostgreSQL datastore any time built-in model methods like `.create()` or `.find()` are executed.
+For example, when you generate a new app, Sails automatically includes three different default attributes in your `config/models.js` file:  `id`, `createdAt`, and `updatedAt`.  Let's say that, for all of your models, you wanted to use a slightly different, customized `id` attribute. To do so, you could just override `attributes: {  id: {...}  }` in your `config/models.js` definition.
 
 
 ##### Overriding settings for a particular model
 
 To further customize these settings for a particular model, you can specify them as top-level properties in that model's definition file (e.g. `api/models/User.js`).  This will override default model settings with the same name.
 
-For example, if you add `autoUpdatedAt: false` to one of your model definitions (`api/models/UploadedFile.js`), then that model will no longer have an implicit `updatedAt` attribute.  But the rest of your models will be unaffected; they will still use the default setting (which is `autoUpdatedAt: true`, unless you've changed it).
+For example, if you add `fetchRecordsOnUpdate: true` to one of your model definitions (`api/models/UploadedFile.js`), then that model will now return the records that were updated.  But the rest of your models will be unaffected; they will still use the default setting (which is `fetchRecordsOnUpdate: false`, unless you've changed it).
 
 
-##### Which approach should I use?
+##### Choosing an approach
 
-By convention, attribute definitions are specified in individual model files.  Most other model settings, like `schema` and `connection`, should be specified app-wide unless you need to override them for a particular model; for example, if your default datastore is PostgreSQL, but you have an `CachedBloodworkReport` model that you want to live in Redis.
+In your day to day development, the model setting you'll interact with most often is `attributes`. Attributes are used in almost every model definition, _and_ some default attributes are included in `config/models.js`.  But for future reference, here are a few additional tips:
+
++ If you are specifying a `tableName`, you should always do so on a per-model basis.  (An app-wide table name wouldn't make sense!)
++ There is no reason to specify an app-wide datastore since you already have one out of the box (named "default").  But you still might want to override `datastore` for a particular model; for example, if your default datastore is PostgreSQL, but you have an `CachedBloodworkReport` model that you want to live in Redis.
++ For the sake of clarity, it is best to only specify `migrate` and `schema` settings as app-wide defaults; never on a per-model basis.
+
 
 Now that you know what model settings are in general, and how to configure them, let's run through and have a look at each one.
 
 --------------------
 
 
-### `migrate`
 
-```javascript
-migrate: 'safe'
+
+### attributes
+
+The set of attribute definitions for a model.
+
+```
+attributes: { /* ... */ }
 ```
 
-The `migrate` setting controls the **auto-migration strategy** that Sails will run every time your app loads.  In short, this tells Sails whether or not you'd like it to attempt to automatically rebuild the tables/collections/sets/etc. in your database(s).
+| Type           | Example                 | Default       |
+| -------------- |:------------------------|:--------------|
+| ((dictionary)) | _See below._            | `{}`          |
+
+Most of the time, you'll define attributes in your individual model definitions (in `api/models/`).  But you can also specify **default attributes** in `config/models.js`.  This allows you to define a set of global attributes in one place, and then rely on Sails to make them available to all of your models implicitly, without repeating yourself.  Default attributes can also be overridden on a per-model basis by defining a replacement attribute with the same name in the relevant model definition.
+
+```js
+attributes: {
+  id: { type: 'number', autoIncrement: true },
+  createdAt: { type: 'number', autoCreatedAt: true },
+  updatedAt: { type: 'number', autoUpdatedAt: true },
+}
+```
+
+For a complete introduction to model attributes, including how to define and use them in your Sails app, see [Concepts > ORM > Attributes](http://sailsjs.com/documentation/concepts/orm/attributes).
+
+### customToJSON
+
+A function that allows you to customize the way a model's records are serialized to JSON.
+
+```
+customToJSON: function() { /*...*/ }
+```
+
+| Type         | Example                 | Default       |
+| ------------ |:------------------------|:--------------|
+| ((function)) | _See below._            | _n/a_         |
+
+Adding the `customToJSON` setting to a model changes the way that the model&rsquo;s records are _stringified_.  In other words, it allows you to inject custom logic that runs any time one of these records are passed into `JSON.stringify()`.  This is most commonly used to implement a failsafe, making sure sensitive data like user passwords aren't accidentally included in a response (since [`res.json()`](http://sailsjs.com/documentation/reference/response-res/res-json) stringifies data before sending).
+
+The `customToJSON` function takes no arguments, but provides access to the record as the `this` variable.  This allows you to omit sensitive data and return the sanitized result, which is what `JSON.stringify()` will actually use when generating a JSON string.  For example:
+
+```js
+customToJSON: function() {
+  // Return a shallow copy of this record with the password and ssn removed.
+  return _.omit(this, ['password', 'ssn'])
+}
+```
+
+> Note that the `this` variable available in `customToJSON` is a _direct reference to the actual record object_, so be careful not to modify it.  In other words, avoid writing code like `delete this.password`.  Instead, use methods like `_.omit()` or `_.pick()` to get a _copy_ of the record.  Or just construct a new dictionary and return that (e.g. `return { foo: this.foo }`).
+
+### tableName
+
+The name of the SQL table (/MongoDB collection) where a model will store and retrieve its records as rows (/MongoDB documents).
+
+```
+tableName: 'some_preexisting_table'
+```
+
+| Type        | Example                    | Default       |
+| ----------- |:---------------------------|:--------------|
+| ((string))  | `'some_preexisting_table'` | _Same as model's identity._
+
+By default, this is the same as the model's [identity](http://sailsjs.com/documentation/concepts/models-and-orm/model-settings?identity).    But if you find yourself integrating with a shared/legacy database, the ability to customize `tableName` this way can save you a lot of time.
+
+The **tableName** setting gives you the ability to customize the name of the underlying _physical model_ that a particular model should use.  In other words, it lets you control where a model stores and retrieves records within the database, _without_ affecting the code in your controller actions / helpers.
+
+> But, what's in a name?  That which we call a "table", by any other word would query as swell.  In databases like MySQL and PostgreSQL, this setting refers to a "table".  In other databases like MongoDB and Redis, it refers to a "collection".
+
+By default, when no tableName is specified, Waterline uses the model's [identity](#?identity) (e.g. "user"):
+
+```js
+User.find().exec(...)
+// => SELECT * FROM user;
+```
+
+This is a recommended convention, and shouldn't need to be changed in most cases.  But, if you are sharing a database with an existing PHP or Java app, or if you'd like to adhere to a different naming convention, then it may be useful to customize this mapping.  Returning to the example above, if you modified your model definition in `api/models/User.js`, and set `tableName: 'foo_bar'`, then you'd see slightly different results:
+
+```js
+User.find().exec(...)
+// => SELECT * FROM foo_bar;
+```
+
+
+### migrate
+
+The **auto-migration strategy** that Sails will run every time your app loads.
+
+```
+migrate: 'alter'
+```
+
+| Type        | Example                 | Default       |
+| ----------- |:------------------------|:--------------|
+| ((string))  | `'alter'`               | _You'll be prompted._<br/><br/>_**Note**: In production, this is always `'safe'`._
+
+The `migrate` setting controls your app's auto-migration strategy.  In short, this tells Sails whether or not you'd like it to attempt to automatically rebuild the tables/collections/sets/etc. in your database(s).
 
 ##### Database migrations
 
@@ -58,14 +153,14 @@ Whenever you need to apply breaking changes to your _production database_, you s
 
 ##### How auto-migrations work
 
-When you lift your Sails app in a development environment (e.g. running `sails lift` in a brand new Sails app), the configured auto-migration strategy will run.  If you are using `migrate: 'safe'`, then nothing extra will happen at all.  But if you are using `drop` or `alter`, Sails will load every record in your development database into memory, then drop and recreate the physical layer representation of the data (i.e. tables/collections/sets/etc.)  This allows any breaking changes you've made in your model definitions, lik removing a uniqueness constraint, to be automatically applied to your development database.  Finally, if you are using `alter`, Sails will then attempt to re-seed the freshly generated tables/collections/sets with the records it saved earlier.  
+When you lift your Sails app in a development environment (e.g. running `sails lift` in a brand new Sails app), the configured auto-migration strategy will run.  If you are using `migrate: 'safe'`, then nothing extra will happen at all.  But if you are using `drop` or `alter`, Sails will load every record in your development database into memory, then drop and recreate the physical layer representation of the data (i.e. tables/collections/sets/etc.)  This allows any breaking changes you've made in your model definitions, lik removing a uniqueness constraint, to be automatically applied to your development database.  Finally, if you are using `alter`, Sails will then attempt to re-seed the freshly generated tables/collections/sets with the records it saved earlier.
 
 
 | Auto-migration strategy  | Description |
 |:-------------------------|:---------------------------------------------|
-|`safe`                    | never auto-migrate my database(s). I will do it myself, by hand.
-|`alter`                   | auto-migrate columns/fields, but attempt to keep my existing data (experimental)
-|`drop`                    | wipe/drop ALL my data and rebuild models every time I lift Sails
+| `safe`                    | never auto-migrate my database(s). I will do it myself, by hand.
+| `alter`                   | auto-migrate columns/fields, but attempt to keep my existing data (experimental)
+| `drop`                    | wipe/drop ALL my data and rebuild models every time I lift Sails
 
 
 ##### Can I use auto-migrations in production?
@@ -74,7 +169,7 @@ The `drop` and `alter` auto-migration strategies in Sails exist as a feature for
 
 In many cases, hosting providers automatically set the `NODE_ENV` environment variable to "production" when they detect a Node.js app.  Even so, please don't rely only on that failsafe, and take the usual precautions to keep your users' data safe.  Any time you connect Sails (or any other tool or framework) to a database with pre-existing production data, **do a dry run**.  Especially the very first time.  Production data is sensitive, valuable, and in many cases irreplaceable.  Customers, users, and their lawyers are not cool with it getting flushed.
 
-As a best practice, make sure to never lift or [deploy](http://sailsjs.com/documentation/concepts/deployment) your app with production database credentials unless you are 100% sure you are running in a production environment.  A popular approach for solving this organization-wide is simply to _never_ push up production database credentials to your source code repository in the first place, and instead relying on [environment variables](http://sailsjs.com/documentation/reference/configuration) for all sensitive credentials.  (This is an especially good idea if your app is subject to regulatory requirements, or if a large number of people have access to your code base.) 
+As a best practice, make sure to never lift or [deploy](http://sailsjs.com/documentation/concepts/deployment) your app with production database credentials unless you are 100% sure you are running in a production environment.  A popular approach for solving this organization-wide is simply to _never_ push up production database credentials to your source code repository in the first place, and instead relying on [environment variables](http://sailsjs.com/documentation/reference/configuration) for all sensitive credentials.  (This is an especially good idea if your app is subject to regulatory requirements, or if a large number of people have access to your code base.)
 
 
 ##### Are auto-migrations slow?
@@ -83,107 +178,161 @@ If you are working with a relatively large amount of development/test data, the 
 
 
 
+### schema
 
-### `schema`
+Whether or not a model expects records to conform to a specific set of attributes.
 
-```javascript
+```
 schema: true
 ```
 
-A flag to toggle schemaless or schema mode in databases that support schemaless data structures. If turned off, this will allow you to store arbitrary data in a record. If turned on, only attributes defined in the model's `attributes` object will be stored.
+| Type        | Example                 | Default       |
+| ----------- |:------------------------|:--------------|
+| ((boolean)) | `true`                  | _Depends on the adapter._
 
-For adapters that don't require a schema, such as Mongo or Redis, the default setting is `schema:false`.
+
+The `schema` setting allows you to toggle a model between "schemaless" or "schemaful" mode.  More specifically, it governs the behavior of methods like `.create()` and `.update()`.  Normally, you are allowed to store arbitrary data in a record, as long as the adapter you're using supports it.  But if you enable `schema:true`, only properties that correspond with the model's `attributes` will actually be stored.
+
+> This setting is only relevant for models using schemaless databases like MongoDB.  When hooked up to a relational database like MySQL or PostgreSQL, a model is always effectively `schema:true` (since the underlying database can only store data in tables and columns that have been set up ahead of time.)
 
 
 
-### `connection`
+### datastore
 
-```javascript
-connection: 'my-local-postgresql'
+The name of the [datastore configuration](http://sailsjs.com/documentation/reference/sails-config/sails-config-datastores) that a model will use to find records, create records, etc.
+
+```
+datastore: 'legacyECommerceDb'
 ```
 
-The configured database [connection](http://sailsjs.com/documentation/reference/sails.config/sails.config.connections.html) where this model will fetch and save its data.  Defaults to `localDiskDb`, the default connection that uses the `sails-disk` adapter.
+| Type       | Example                 | Default       |
+| ---------- |:------------------------|:--------------|
+| ((string)) | `'legacyECommerceDb'`   | `'default'`   |
+
+This indicates the database where this model will fetch and save its data.  Unless otherwise specified, every model in your app uses a built-in datastore named "default", which is included in every new Sails app out of the box.  This makes it easy to configure your app's primary database, while still allowing you to override the `datastore` setting for any particular model.
+
+For more about configuring your app's datastores, see [Reference > Configuration > Datastores](http://sailsjs.com/documentation/reference/sails-config/sails-config-datastores).
 
 
-### `identity`
+### dontUseObjectIds
 
-```javascript
-identity: 'purchase'
+> ##### _**This feature is for use with the [`sails-mongo` adapter](http://sailsjs.com/documentation/concepts/extending-sails/adapters/available-adapters#?sailsmongo) only.**_
+
+If set to `true`, the model will _not_ use an auto-generated MongoDB ObjectID object as its primary key.  This allows you to create models using the `sails-mongo` adapter with primary keys that are strings or numbers.  Note that setting this to `true` means that you will have to provide a value for `id` in every call to [`.create()`](http://sailsjs.com/documentation/reference/waterline-orm/models/create) or [`.createEach()`](http://sailsjs.com/documentation/reference/waterline-orm/models/create-each).
+
+### cascadeOnDestroy
+
+> ##### _**This feature is still experimental.**_
+> This model setting is still under development, and its interface and/or behavior could change at any time.
+
+Whether or not to _always_ act like you set `cascade: true` any time you call `.destroy()` using this model.
+
+```
+cascadeOnDestroy: true
 ```
 
-The lowercase unique key for this model, e.g. `user`.  By default, a model's `identity` is inferred automatically by lowercasing its filename.  You should never change this property on your models.
+| Type        | Example                 | Default       |
+| ----------- |:------------------------|:--------------|
+| ((boolean)) | `true`                  | `false`
 
-### `globalId`
+This is disabled by default, for performance reasons.  You can enable it with this model setting, or on a per-query basis using [`.meta({cascade: true})`](http://sailsjs.com/documentation/reference/waterline-orm/queries/meta).
+
+
+### Seldom-used settings
+
+The following low-level settings are included in the spirit of completeness, but in practice, they should rarely (if ever) be changed.
+
+
+##### primaryKey
+
+The name of a model's primary key attribute.
+
+> **You should never need to change this setting, since you set a custom `columnName` on the "id" attribute.**
 
 ```javascript
-globalId: 'Purchase'
+primaryKey: 'id'
 ```
 
-This flag changes the global name by which you can access your model (if the globalization of models is enabled).  You should never change this property on your models. To disable globals, see [`sails.config.globals`](http://sailsjs.com/documentation/concepts/Globals?q=disabling-globals).
+| Type       | Example       | Default       |
+| ---------- |:--------------|:--------------|
+| ((string)) | `'id'`        | `'id'`        |
 
+Conventionally, this is "id", a default attribute that is included for you automatically in the `config/models.js` file of new apps generated as of Sails v1.0.  The best way to change the primary key for your model is simply to customize the `columnName` of that default attribute.
 
-
-### autoPK
-
-```javascript
-autoPK: true
-```
-
-A flag to toggle the automatic definition of a primary key in your model. The details of this default PK vary between adapters (e.g. MySQL uses an auto-incrementing integer primary key, whereas MongoDB uses a randomized string UUID).  In any case, the primary keys generated by autoPK will be unique. If turned off no primary key will be created by default, and you will need to define one manually, e.g.:
+For example, imagine you have a User model that needs to integrate with a table in a pre-existing MySQL database.  That table might have a column named something other than "id" (like "email_address") as its primary key.  To make your model respect that primary key, you'd specify an override for your `id` attribute in the model definition; like this:
 
 ```js
-attributes: {
-  sku: {
-    type: 'string',
-    primaryKey: true,
-    unique: true
-  }
+id: {
+  type: 'string',
+  columnName: 'email_address',
+  required: true
 }
 ```
 
-### `autoCreatedAt`
-
-```javascript
-autoCreatedAt: true
-```
-
-If set to `false`, this disables the automatic definition of a `createdAt` attribute in your model.  By default, `createdAt` is an attribute which will be automatically set when a record is created with the current (timezone-agnostic) timestamp.   If set to a string, that string will be used as the custom field/column name for the `createdAt` attribute.
-
-
-### `autoUpdatedAt`
-
-```javascript
-autoUpdatedAt: true
-```
-If set to `false`, this disables the automatic definition of an `updatedAt` attribute in your model.  By default, `updatedAt` is an attribute which will be automatically set with the current (timezone-agnostic) timestamp every time a record is updated.  If set to a string, that string will be used as the custom field/column name for the `updatedAt` attribute.
-
-### tableName
-
-```javascript
-tableName: 'some_preexisting_table'
-```
-
-You can define a custom name for the physical collection in your adapter by adding a `tableName` attribute. __This isn't just for tables__.  In MySQL, PostgreSQL, Oracle, etc. this setting refers to the name of the table, but in MongoDB or Redis, it refers to the collection, and so forth. If no tableName is specified, Waterline will use the model's `identity` as its `tableName`.
-
-This is particularly useful for working with pre-existing/legacy databases.
-
-<!-- in WL2, this is `cid` (but is backwards-compatible) -->
-
-
-
-### `attributes`
+Then, in your app's code, you'll be able to look up users by primary key, while the mapping to `email_address` in all generated SQL queries is taken care of for you automatically:
 
 ```js
-attributes: {
-  name: { type: 'string' },
-  email: { type: 'email' },
-  age: { type: 'integer' }
+User.find({ id: req.param('emailAddress' }).exec(/*...*/);
+```
+
+> All caveats aside, lets say you're an avid user of MongoDB.  In your new Sails app, you'll start off by setting `columnName: '_id'` on your default "id" attribute in `config/models.js`.  Then you can use Sails and Waterline just like normal, and everything will work just fine.
+>
+> But what if you find yourself wishing that you could change the actual name of the "id" attribute itself-- purely for the sake of familiarity?  For example, that way, when you call built-in model methods in your code, instead of the usual "id", you would use syntax like `.destroy({ _id: 'ba8319abd-13810-ab31815' })`.
+>
+> That's where this model setting might come in.  All you'd have to do is edit `config/models.js` so that it contains `primaryKey: '_id'`, and then rename the default "id" attribute to "_id".  But there are some [good reasons to reconsider](https://gist.github.com/mikermcneil/9247a420488d86f09be342038e114a08).
+
+
+##### identity
+
+The lowercase, unique identifier for a model.
+
+> **A model's `identity` is read-only.  It is automatically derived, and should never be set by hand.**
+
+```
+Something.identity;
+```
+
+| Type       | Example       |
+| ---------- |:--------------|
+| ((string)) | `'purchase'`  |
+
+
+In Sails, a model's `identity` is inferred automatically by lowercasing its filename and stripping off the file extension.  For example, the identity of `api/models/Purchase.js` would be `purchase`.  It would be accessible as `sails.models.purchase`, and if blueprint routes were enabled, you'd be able to reach it with requests like `GET /purchase` and `PATCH /purchase/1`.
+
+```javascript
+assert(Purchase.identity === 'purchase');
+assert(sails.models.purchase.identity === 'purchase');
+assert(Purchase === sails.models.purchase);
+```
+
+
+
+##### globalId
+
+The unique global identifier for a model, which also determines the name of its corresponding global variable (if relevant).
+
+> **A model's `globalId` is read-only.  It is automatically derived, and should never be set by hand.**
+
+```
+Something.globalId;
+```
+
+| Type       | Example       |
+| ---------- |:--------------|
+| ((string)) | `'Purchase'`  |
+
+The primary purpose of a model's globalId is to determine the name of the global variable that Sails automatically exposes on its behalf-- that is, unless globalization of models has been [disabled](http://sailsjs.com/documentation/concepts/globals?q=disabling-globals).  In Sails, a model's `globalId` is inferred automatically by from its filename.  For example, the globalId of `api/models/Purchase.js` would be `Purchase`.
+
+```javascript
+assert(Purchase.globalId === 'Purchase');
+assert(sails.models.purchase.globalId === 'Purchase');
+if (sails.config.globals.models) {
+  assert(sails.models.purchase === Purchase);
+}
+else {
+  assert(typeof Purchase === 'undefined');
 }
 ```
 
-See [Attributes](http://sailsjs.com/documentation/concepts/ORM/Attributes.html).
 
-
-
-
-<docmeta name="displayName" value="Model Settings">
+<docmeta name="displayName" value="Model settings">

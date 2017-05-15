@@ -12,7 +12,11 @@ If [`io.sails.autoConnect`](http://sailsjs.com/documentation/reference/web-socke
 
 ### `io.sails.autoConnect`
 
-When the `io.sails.autoConnect` is set to `true` (the default), the library will wait one cycle of the event loop after loading and then attempt to create a new [`SailsSocket`](http://sailsjs.com/documentation/reference/web-sockets/socket-client/sails-socket) and connect it to the URL specified by `io.sails.url`.  When used in the browser, the new socket will be exposed as `io.socket`.  When used in a Node.js script, the new socket will be attached as the `socket` property of the variable used to initialize the `sails.io.js` library.
+When `io.sails.autoConnect` is set to `true` (the default), the library will wait one cycle of the event loop after loading and then attempt to create a new [`SailsSocket`](http://sailsjs.com/documentation/reference/web-sockets/socket-client/sails-socket) and connect it to the URL specified by `io.sails.url`.  When used in the browser, the new socket will be exposed as `io.socket`.  When used in a Node.js script, the new socket will be attached as the `socket` property of the variable used to initialize the `sails.io.js` library.
+
+### `io.sails.reconnection`
+
+When `io.sails.reconnection` is set to `true`, sockets will automatically (and continuously) attempt to reconnect to the server if they become disconnected unexpectedly (that is, _not_ as the result of a call to [`.disconnect()`](http://sailsjs.com/documentation/reference/web-sockets/socket-client/sails-socket/methods#?disconnect)).  If set to `false` (the default), no automatic reconnection attempt will be made.  Defaults to `false`.
 
 ### `io.sails.environment`
 
@@ -23,10 +27,10 @@ Use `io.sails.environment` to set an environment for `sails.io.js`, which affect
 The other properties of `io.sails` are used as defaults when creating new sockets (either the eager socket or via [`io.sails.connect()`](http://sailsjs.com/documentation/reference/web-sockets/socket-client/io-sails#?the-connect-method)).  See the [SailsSocket properties reference](http://sailsjs.com/documentation/reference/web-sockets/socket-client/sails-socket/properties) for a full list of available options, as well as a table of the default `io.sails` values.  Here are the most commonly used properties:
 
   Property          | Type       | Default   | Details
- ------------------ |----------| --------- | :-------:
- `url`              | ((string)) | Value of [`io.sails.url`](http://sailsjs.com/documentation/reference/web-sockets/socket-client/sails-socket/properties#?iosails-defaults) | The URL that the socket is connected to, or will attempt to connect to.
- `transports`       | ((array))  | Value of [`io.sails.transports`](http://sailsjs.com/documentation/reference/web-sockets/socket-client/sails-socket/properties#?iosails-defaults) | The transports that the socket will attempt to connect using.  Transports will be tried in order, with upgrades allowed: that is, if you list both "polling" and "websocket", then after establishing a long-polling connection the server will attempt to upgrade it to a websocket connection.  This setting should match the value of `sails.config.sockets.transports` in your Sails app.
-`headers` | ((dictionary)) | Value of [`io.sails.headers`](http://sailsjs.com/documentation/reference/web-sockets/socket-client/sails-socket/properties#?iosails-defaults) | Dictionary of headers to be sent by default with every request from this socket.  Can be overridden via the `headers` option in [`.request()`](http://sailsjs.com/documentation/reference/web-sockets/socket-client/io-socket-request).
+ :------------------ |----------|:--------- |:-------
+ url                | ((string)) | Value of [`io.sails.url`](http://sailsjs.com/documentation/reference/web-sockets/socket-client/sails-socket/properties#?iosails-defaults) | The URL that the socket is connected to, or will attempt to connect to.
+ transports         | ((array))  | Value of [`io.sails.transports`](http://sailsjs.com/documentation/reference/web-sockets/socket-client/sails-socket/properties#?iosails-defaults) | The transports that the socket will attempt to connect using.  Transports will be tried in order, with upgrades allowed: that is, if you list both "polling" and "websocket", then after establishing a long-polling connection the server will attempt to upgrade it to a websocket connection.  This setting should match the value of `sails.config.sockets.transports` in your Sails app.
+ headers   | ((dictionary)) | Value of [`io.sails.headers`](http://sailsjs.com/documentation/reference/web-sockets/socket-client/sails-socket/properties#?iosails-defaults) | Dictionary of headers to be sent by default with every request from this socket.  Can be overridden via the `headers` option in [`.request()`](http://sailsjs.com/documentation/reference/web-sockets/socket-client/io-socket-request).
 
 
 

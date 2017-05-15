@@ -1,4 +1,5 @@
 # Routes
+
 ### Overview
 
 The most basic feature of any web application is the ability to interpret a request sent to a URL, then send back a response.  In order to do this, your application has to be able to distinguish one URL from another.
@@ -54,8 +55,15 @@ In addition to your custom routes, Sails binds many routes for you automatically
 
 * [Blueprint routes](http://sailsjs.com/documentation/reference/blueprint-api?q=blueprint-routes), which provide your [controllers](http://sailsjs.com/documentation/concepts/Controllers) and [models](http://sailsjs.com/documentation/concepts/ORM/Models.html) with a full REST API.
 * [Assets](http://sailsjs.com/documentation/concepts/Assets), such as images, Javascript and stylesheet files.
-* [CSRF](http://sailsjs.com/documentation/concepts/Security/CSRF.html), if turned on, provides a **/csrfToken** route to your app that can be used to retrieve the CSRF token.
 
+
+##### Unhandled Requests
+
+If no custom or automatic route matches a request URL, Sails will send back a default 404 response.  This response can be customized by adding a `api/responses/notFound.js` file to your app.  See [custom responses](http://sailsjs.com/documentation/concepts/extending-sails/custom-responses) for more info.
+
+##### Unhandled Errors in Request Handlers
+
+If an unhandled error is thrown during the processing of a request (for instance, in some [action code](http://sailsjs.com/documentation/concepts/actions-and-controllers), Sails will send back a default 500 response. This response can be customized by adding a `api/responses/serverError.js` file to your app.  See [custom responses](http://sailsjs.com/documentation/concepts/extending-sails/custom-responses) for more info.
 
 ### Supported Protocols
 
