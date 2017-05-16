@@ -1,4 +1,4 @@
-# Configuration
+# 設定
 
 ### Overview
 

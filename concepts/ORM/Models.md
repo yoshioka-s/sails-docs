@@ -1,4 +1,4 @@
-# Models
+# モデル
 
 A model represents a set of structured data, called records.  Models usually correspond to a table/collection in a database, attributes correspond to columns/fields, and records correspond to rows/documents.
 

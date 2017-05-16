@@ -1,4 +1,4 @@
-# Services
+# サービス
 
 > _**Note**_: Although Services are still fully supported in Sails 1.0, it is recommended that you use [helpers](http://sailsjs.com/documentation/concepts/helpers) instead.
 
