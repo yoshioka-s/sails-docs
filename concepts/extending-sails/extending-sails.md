@@ -1,4 +1,4 @@
-# Extending Sails
+# Sailsの拡張
 
 In keeping with the Node philosophy, Sails aims to keep its core as small as possible, delegating all but the most critical functions to separate modules[*](./#foot1).  There are currently three types of extensions that you can make to Sails:
 
