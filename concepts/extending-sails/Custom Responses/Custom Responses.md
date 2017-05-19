@@ -1,4 +1,4 @@
-# Custom responses
+# カスタムレスポンス
 
 ### Overview
 
