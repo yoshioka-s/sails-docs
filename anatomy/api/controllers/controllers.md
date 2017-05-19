@@ -7,7 +7,7 @@
 `api/controllers`ディレクトリは、_スタンドアローンアクション（standalone actions）_も含むことが可能です。スタンドアローンアクションとは、_一つだけ_のコントローラ・アクションを含むようなJavascriptファイルのことです。
 
 
-詳細は[主なアクションとコントローラについて](http://sailsjs-jp.org/documentation/concepts/actions-and-controllers)を参照してください。
+詳細は[アクションとコントローラについて](http://sailsjs-jp.org/documentation/concepts/actions-and-controllers)を参照してください。
 
 <docmeta name="displayName" value="controllers">
 
