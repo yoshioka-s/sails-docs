@@ -1,4 +1,4 @@
-# Blueprint routes
+# blueprintルート
 
 When you run `sails lift` with blueprints enabled, the framework inspects your models and configuration in order to [bind certain routes](http://sailsjs.com/documentation/concepts/Routes) automatically. These implicit blueprint routes (sometimes called "shadow routes", or even just "shadows") allow your app to respond to certain requests without you having to bind those routes manually in your `config/routes.js` file.  When enabled, the blueprint routes point to their corresponding blueprint *actions* (see "Action routes" below), any of which can be overridden with custom code.
 
